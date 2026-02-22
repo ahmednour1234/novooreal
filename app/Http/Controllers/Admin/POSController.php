@@ -41,6 +41,7 @@ use App\Models\Transaction;
 use App\Models\Supplier;
 use App\Models\StockHistory;
 use App\CPU\Helpers;
+use App\Services\ZATCAService;
 use Brian2694\Toastr\Facades\Toastr;
 use function App\CPU\translate;
 use Illuminate\Support\Facades\DB;
@@ -1480,6 +1481,30 @@ public function place_order(Request $request): RedirectResponse|JsonResponse
         $order->collected_cash        = $request->collected_cash;
         $order->type                  = ($type === 1) ? 4 : $request->type;
         $order->date                  = $request->date;
+
+        // --------- ZATCA Compliance Fields ---------
+        if (empty($order->uuid)) {
+            $order->uuid = ZATCAService::generateUUID();
+        }
+        if (empty($order->currency_code)) {
+            $order->currency_code = 'SAR';
+        }
+        if (empty($order->invoice_counter)) {
+            $order->invoice_counter = ZATCAService::getNextInvoiceCounter($order->company_id);
+        }
+        $order->invoice_number = ZATCAService::generateInvoiceNumber($order->invoice_counter);
+        $order->previous_invoice_hash = ZATCAService::getPreviousInvoiceHash($order->company_id);
+        
+        // Generate ZATCA QR code data
+        $businessSettings = \App\Models\BusinessSetting::whereIn('key', ['shop_name', 'number_tax'])->pluck('value', 'key');
+        $zatcaQrData = [
+            'seller_name' => $businessSettings['shop_name'] ?? '',
+            'vat_registration_number' => $businessSettings['number_tax'] ?? '',
+            'invoice_date' => $order->date ?: $order->created_at?->format('Y-m-d H:i:s'),
+            'invoice_total' => $grand_total,
+            'vat_total' => $total_tax_amount,
+        ];
+        $order->zatca_qr_code = ZATCAService::generateZATCAQRCode($zatcaQrData);
 
         // --------- قيود اليومية + معاملات الترانزكشن ---------
         // مَن الحساب المدين الرئيسي؟ عميل/نقدي/حساب آخر

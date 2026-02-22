@@ -322,6 +322,31 @@ public function execute(Request $request)
         // حقول مرجعية للكاش من الواجهة (لو موجودة)
         $order->collected_cash         = $request->input('payment_info.payment_amount');
         $order->transaction_reference  = $request->input('payment_info.payment_amount');
+        
+        // ===== ZATCA Compliance Fields =====
+        if (empty($order->uuid)) {
+            $order->uuid = \App\Services\ZATCAService::generateUUID();
+        }
+        if (empty($order->currency_code)) {
+            $order->currency_code = 'SAR';
+        }
+        if (empty($order->invoice_counter)) {
+            $order->invoice_counter = \App\Services\ZATCAService::getNextInvoiceCounter($order->company_id);
+        }
+        $order->invoice_number = \App\Services\ZATCAService::generateInvoiceNumber($order->invoice_counter);
+        $order->previous_invoice_hash = \App\Services\ZATCAService::getPreviousInvoiceHash($order->company_id);
+        
+        // Generate ZATCA QR code data
+        $businessSettings = \App\Models\BusinessSetting::whereIn('key', ['shop_name', 'number_tax'])->pluck('value', 'key');
+        $zatcaQrData = [
+            'seller_name' => $businessSettings['shop_name'] ?? '',
+            'vat_registration_number' => $businessSettings['number_tax'] ?? '',
+            'invoice_date' => $order->date ?: $order->created_at?->format('Y-m-d H:i:s'),
+            'invoice_total' => $final_order_amount,
+            'vat_total' => $product_tax,
+        ];
+        $order->zatca_qr_code = \App\Services\ZATCAService::generateZATCAQRCode($zatcaQrData);
+        
         $order->save();
 
         OrderDetail::insert($order_details);
