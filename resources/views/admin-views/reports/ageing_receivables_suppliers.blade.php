@@ -1,0 +1,312 @@
+@extends('layouts.admin.app')
+
+@section('content')
+    <style>
+   
+        h2 {
+            text-align: center;
+            color: #001B63;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        .date-range {
+            text-align: center;
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 30px;
+        }
+        .form-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-container form {
+            display: inline-block;
+            background: #f7faff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            border: 1px solid #c3d0e8;
+        }
+        .form-container label {
+            margin-right: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-container input[type="date"] {
+            padding: 8px 12px;
+            margin-right: 20px;
+            border: 1px solid #bfcadf;
+            border-radius: 4px;
+            outline: none;
+        }
+        .form-container button {
+            background: #001B63;
+            color: #fff;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 10px;
+            transition: background 0.3s ease;
+        }
+        .form-container button:hover {
+            background: #003388;
+        }
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        table, th, td {
+        }
+        table th, table td {
+            padding: 14px 20px;
+            text-align: center;
+        }
+        table th {
+         
+        }
+ 
+        .no-print { display: block; }
+        .print-only { display: none; }
+        @media print {
+            .no-print { display: none; }
+            .print-only { display: block !important; }
+            body {
+                direction: rtl;
+                font-family: 'Arial', sans-serif;
+                font-size: 14px;
+                margin: 20px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            table, th, td {
+                border: 1px solid #333;
+            }
+            th, td {
+                padding: 10px;
+                text-align: right;
+            }
+            h2, h3 {
+                text-align: center;
+            }
+            .header-section {
+                margin-bottom: 20px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #003366;
+            }
+        }
+            .equal-btn {
+            min-width: 160px;
+            margin: 5px;
+        }
+    </style>
+
+    <div class="container">
+                <div class="mb-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-white px-3 py-2 rounded shadow-sm">
+            <li class="breadcrumb-item">
+                <a href="{{ route('admin.dashboard') }}" class="text-secondary">
+                    <i class="tio-home-outlined"></i> {{ \App\CPU\translate('الرئيسية') }}
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="#" class="text-primary">
+                    {{ \App\CPU\translate('  تقرير إعمار  ديون الموردين') }}
+                </a>
+            </li>
+           
+        </ol>
+    </nav>
+</div>
+
+        <!-- Display selected date range if available -->
+
+         <div class="card p-4 shadow-sm mb-4 no-print" style="background: #fff;">
+    <form method="GET"action="{{ url()->current() }}">
+        {{-- 🔹 التاريخ من وإلى --}}
+        <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-6">
+                <label for="start_date" class="form-label">{{ \App\CPU\translate('من تاريخ') }}</label>
+                <input type="date" name="start_date" id="start_date" class="form-control"
+                        value="{{ request('start_date') }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="end_date" class="form-label">{{ \App\CPU\translate('إلى تاريخ') }}</label>
+                <input type="date" name="end_date" id="end_date" class="form-control"
+                       value="{{ request('end_date') }}" required>
+            </div>
+        </div>
+
+        {{-- 🔹 الأزرار الموحدة --}}
+<div class="row mt-4">
+    <div class="col-md-3 mb-2">
+        <button type="button" onclick="printDiv('printableArea')" class="btn btn-primary w-100">
+            {{ \App\CPU\translate('طباعة') }}
+        </button>
+    </div>
+    <div class="col-md-3 mb-2">
+        <button type="submit" class="btn btn-success w-100">
+            {{ \App\CPU\translate('بحث') }}
+        </button>
+    </div>
+    <div class="col-md-3 mb-2">
+        <a onclick="exportTableToExcel('excel-table')" class="btn btn-info w-100">
+            {{ \App\CPU\translate('إصدار ملف أكسل') }}
+        </a>
+    </div>
+    <div class="col-md-3 mb-2">
+        <a href="{{ url()->current() }}" class="btn btn-danger w-100">
+            {{ \App\CPU\translate('إلغاء') }}
+        </a>
+    </div>
+</div>
+    </form>
+</div>
+
+
+        <div id="printableArea">
+            <!-- Print-Only Business Header -->
+            <div class="header-section print-only">
+                <table style="width:100%; border: none;">
+                    <tr>
+                        <td style="width:33%; text-align: left; border: none;">
+                            <p><strong>رقم السجل التجاري:</strong> {{ \App\Models\BusinessSetting::where("key", "vat_reg_no")->first()->value ?? '' }}</p>
+                            <p><strong>الرقم الضريبي:</strong> {{ \App\Models\BusinessSetting::where("key", "number_tax")->first()->value ?? '' }}</p>
+                            <p><strong>البريد الإلكتروني:</strong> {{ \App\Models\BusinessSetting::where("key", "shop_email")->first()->value ?? '' }}</p>
+                        </td>
+                        <td style="width:33%; text-align: center; border: none;">
+                            <img class="logo-img" src="{{ asset('storage/app/public/shop/' . (\App\Models\BusinessSetting::where("key", "shop_logo")->first()->value ?? '')) }}" alt="شعار المتجر" style="max-width:150px;">
+                        </td>
+                        <td style="width:33%; text-align: right; border: none;">
+                            <p><strong>اسم المؤسسة:</strong> {{ \App\Models\BusinessSetting::where("key", "shop_name")->first()->value ?? '' }}</p>
+                            <p><strong>العنوان:</strong> {{ \App\Models\BusinessSetting::where("key", "shop_address")->first()->value ?? '' }}</p>
+                            <p><strong>رقم الجوال:</strong> {{ \App\Models\BusinessSetting::where("key", "shop_phone")->first()->value ?? '' }}</p>
+                        </td>
+                    </tr>
+                </table>
+                <h2 style="margin-top: 20px;">تقرير إعمار ديون الموردين</h2>
+                @if(isset($startDate) && isset($endDate))
+                    <div class="date-range">
+                        التقرير من تاريخ: <strong>{{ $startDate }}</strong> إلى تاريخ: <strong>{{ $endDate }}</strong>
+                    </div>
+                @endif
+            </div>
+
+            <div class="table-responsive">
+                @php
+                    $total0_30 = 0;
+                    $total31_60 = 0;
+                    $total61_90 = 0;
+                    $total90plus = 0;
+                    $total_current_balance = 0;
+                    foreach ($report as $data) {
+                        $total0_30 += $data['0-30'];
+                        $total31_60 += $data['31-60'];
+                        $total61_90 += $data['61-90'];
+                        $total90plus += $data['90+'];
+                        $total_current_balance += $data['current_balance'];
+                    }
+                    $supplierCount = count($report);
+                @endphp
+
+   <table id="excel-table" class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:70px">#</th>
+                        <th>{{ __('المورد') }}</th>
+                        <th class="text-center">{{ __('0-30') }}</th>
+                        <th class="text-center">{{ __('31-60') }}</th>
+                        <th class="text-center">{{ __('61-90') }}</th>
+                        <th class="text-center">{{ __('90+') }}</th>
+                        <th class="text-center">{{ __('الرصيد الحالي') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                        $fmt = fn($n) => number_format($n, 2);
+                        $cls = fn($n) => $n < 0 ? 'neg' : 'pos';
+                    @endphp
+
+                    @forelse ($report as $i => $row)
+                        @php
+                            $v0  = $row['0-30'] ?? 0;
+                            $v31 = $row['31-60'] ?? 0;
+                            $v61 = $row['61-90'] ?? 0;
+                            $v90 = $row['90+']   ?? 0;
+                            $cur = $row['current_balance'] ?? 0;
+                        @endphp
+                        <tr>
+                            <td class="num">{{ $i + 1 }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ $row['supplier_name'] }}</div>
+                                <div class="text-muted small">{{ __('حساب') }}: {{ $row['account_id'] }}</div>
+                            </td>
+                            <td class="num {{ $cls($v0) }}">{{ $fmt($v0) }}</td>
+                            <td class="num {{ $cls($v31) }}">{{ $fmt($v31) }}</td>
+                            <td class="num {{ $cls($v61) }}">{{ $fmt($v61) }}</td>
+                            <td class="num {{ $cls($v90) }}">{{ $fmt($v90) }}</td>
+                            <td class="num {{ $cls($cur) }}"><b>{{ $fmt($cur) }}</b></td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                {{ __('لا توجد بيانات لعرضها') }}
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+                @if(!empty($report))
+                <tfoot>
+                    <tr>
+                        <th colspan="2" class="text-end">{{ __('الإجمالي') }}</th>
+                        <th class="num">{{ number_format($totals['0_30'] ?? 0, 2) }}</th>
+                        <th class="num">{{ number_format($totals['31_60'] ?? 0, 2) }}</th>
+                        <th class="num">{{ number_format($totals['61_90'] ?? 0, 2) }}</th>
+                        <th class="num">{{ number_format($totals['90_plus'] ?? 0, 2) }}</th>
+                        <th class="num"><b>{{ number_format($totals['current'] ?? 0, 2) }}</b></th>
+                    </tr>
+                </tfoot>
+                @endif
+            </table>            </div>
+        </div>
+    </div>
+@endsection
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- ✅ كود التصدير -->
+<script>
+    function exportTableToExcel(tableId, filename = 'transactions.xlsx') {
+        let table = document.getElementById(tableId);
+        let workbook = XLSX.utils.table_to_book(table, {sheet: "Sheet1"});
+        XLSX.writeFile(workbook, filename);
+    }
+</script>
+<script>
+function printDiv(divId) {
+    var content = document.getElementById(divId).innerHTML;
+    var printWindow = window.open('', '', 'height=700,width=900');
+    printWindow.document.write('<html><head><title>طباعة التقرير</title>');
+    printWindow.document.write('<style>');
+    printWindow.document.write('body { font-family: Arial, sans-serif; margin: 20px; direction: rtl; }');
+    printWindow.document.write('table { width: 100%; border-collapse: collapse; }');
+    printWindow.document.write('table, th, td { border: 1px solid #333; }');
+    printWindow.document.write('th, td { padding: 10px; text-align: right; }');
+    printWindow.document.write('h2, h3 { text-align: center; margin-top: 20px; }');
+    printWindow.document.write('.header-section { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #003366; }');
+    printWindow.document.write('</style>');
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(content);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+}
+</script>
