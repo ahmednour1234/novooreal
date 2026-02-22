@@ -1624,6 +1624,7 @@ public function place_order(Request $request): RedirectResponse|JsonResponse
 
         // --------- حفظ الطلب + التفاصيل + لوج المنتجات ---------
         $order->save();
+        event(new \App\Events\InvoiceFinalized($order));
         $this->order_details->insert($order_details);
         $this->product_logs->insert($productlogs);
 

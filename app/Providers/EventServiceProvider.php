@@ -18,6 +18,9 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
+        \App\Events\InvoiceFinalized::class => [
+            \App\Listeners\ProcessZatcaInvoice::class,
+        ],
     ];
 
     /**

@@ -4,67 +4,52 @@ namespace App\Services;
 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use App\Models\Order;
+use App\Models\ZatcaEgsUnit;
+use App\Models\ZatcaDocument;
+use App\Models\CompanySetting;
 
 class ZATCAService
 {
-    /**
-     * Generate a unique UUID for invoice
-     *
-     * @return string
-     */
+    protected ZatcaKeyService $keyService;
+    protected ZatcaXmlService $xmlService;
+    protected ZatcaApiService $apiService;
+    protected ZatcaQrService $qrService;
+
+    public function __construct(
+        ZatcaKeyService $keyService,
+        ZatcaXmlService $xmlService,
+        ZatcaApiService $apiService,
+        ZatcaQrService $qrService
+    ) {
+        $this->keyService = $keyService;
+        $this->xmlService = $xmlService;
+        $this->apiService = $apiService;
+        $this->qrService = $qrService;
+    }
+
     public static function generateUUID(): string
     {
         return (string) Str::uuid();
     }
 
-    /**
-     * Generate formatted invoice number
-     *
-     * @param int $counter
-     * @return string
-     */
     public static function generateInvoiceNumber(int $counter): string
     {
         return 'INV-' . str_pad($counter, 6, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * Calculate hash for invoice chain validation
-     *
-     * @param array $invoiceData
-     * @return string
-     */
     public static function calculateHash(array $invoiceData): string
     {
         $dataString = json_encode($invoiceData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         return hash('sha256', $dataString);
     }
 
-    /**
-     * Generate ZATCA-compliant QR code data
-     *
-     * @param array $invoiceData
-     * @return string
-     */
     public static function generateZATCAQRCode(array $invoiceData): string
     {
-        $qrData = [
-            'seller_name' => $invoiceData['seller_name'] ?? '',
-            'vat_registration_number' => $invoiceData['vat_registration_number'] ?? '',
-            'invoice_date' => $invoiceData['invoice_date'] ?? '',
-            'invoice_total' => $invoiceData['invoice_total'] ?? 0,
-            'vat_total' => $invoiceData['vat_total'] ?? 0,
-        ];
-
-        return base64_encode(json_encode($qrData, JSON_UNESCAPED_UNICODE));
+        $qrService = new ZatcaQrService();
+        return $qrService::generateQRCode($invoiceData);
     }
 
-    /**
-     * Get next invoice counter for company
-     *
-     * @param int|null $companyId
-     * @return int
-     */
     public static function getNextInvoiceCounter(?int $companyId = null): int
     {
         $query = DB::table('orders')
@@ -79,12 +64,6 @@ class ZATCAService
         return ($maxCounter ?? 0) + 1;
     }
 
-    /**
-     * Get previous invoice hash for chain validation
-     *
-     * @param int|null $companyId
-     * @return string|null
-     */
     public static function getPreviousInvoiceHash(?int $companyId = null): ?string
     {
         $query = DB::table('orders')
@@ -101,12 +80,6 @@ class ZATCAService
         return $lastOrder->previous_invoice_hash ?? null;
     }
 
-    /**
-     * Validate ZATCA compliance for order
-     *
-     * @param \App\Models\Order $order
-     * @return array
-     */
     public static function validateZATCACompliance($order): array
     {
         $errors = [];
@@ -135,5 +108,119 @@ class ZATCAService
             'valid' => empty($errors),
             'errors' => $errors
         ];
+    }
+
+    public function generateQRCodeTLV(Order $order, ?string $signature = null): string
+    {
+        $companySettings = CompanySetting::getSettings();
+        if (!$companySettings) {
+            throw new \RuntimeException('Company settings not found');
+        }
+
+        $invoiceData = [
+            'seller_name' => $companySettings->company_name_ar,
+            'vat_registration_number' => $companySettings->vat_tin,
+            'invoice_timestamp' => $order->created_at->toIso8601String(),
+            'invoice_total' => $order->order_amount,
+            'vat_total' => $order->total_tax ?? 0,
+        ];
+
+        return $this->qrService::generateQRCode($invoiceData, $signature);
+    }
+
+    public function validateInvoice(Order $order): array
+    {
+        return self::validateZATCACompliance($order);
+    }
+
+    public function buildInvoiceXML(Order $order, ZatcaEgsUnit $egsUnit, string $invoiceType = 'standard'): string
+    {
+        return $this->xmlService->buildInvoiceXML($order, $egsUnit, $invoiceType);
+    }
+
+    public function signXML(string $xml, ZatcaEgsUnit $egsUnit): string
+    {
+        $signature = $this->keyService->signData($xml, $egsUnit);
+
+        $dom = new \DOMDocument();
+        $dom->loadXML($xml);
+
+        $signatureElement = $dom->createElement('Signature', $signature);
+        $dom->documentElement->appendChild($signatureElement);
+
+        return $dom->saveXML();
+    }
+
+    public function submitInvoice(Order $order, ZatcaEgsUnit $egsUnit, string $environment = 'simulation'): array
+    {
+        $invoiceType = $this->getInvoiceType($order->type);
+        $xml = $this->buildInvoiceXML($order, $egsUnit, $invoiceType);
+        $signedXml = $this->signXML($xml, $egsUnit);
+
+        $result = $this->apiService->submitInvoice($signedXml, $egsUnit, $environment);
+
+        if ($result['success']) {
+            $zatcaDocument = ZatcaDocument::where('order_id', $order->id)->first();
+            if (!$zatcaDocument) {
+                $zatcaDocument = new ZatcaDocument();
+                $zatcaDocument->order_id = $order->id;
+                $zatcaDocument->egs_unit_id = $egsUnit->id;
+                $zatcaDocument->invoice_uuid = $order->uuid;
+                $zatcaDocument->invoice_number = $order->invoice_number;
+                $zatcaDocument->invoice_type = $invoiceType;
+            }
+
+            $zatcaDocument->xml_content = $xml;
+            $zatcaDocument->signed_xml = $signedXml;
+            $zatcaDocument->submission_status = 'success';
+            $zatcaDocument->zatca_uuid = $result['data']['uuid'] ?? null;
+            $zatcaDocument->zatca_long_id = $result['data']['longId'] ?? null;
+            $zatcaDocument->submitted_at = now();
+            $zatcaDocument->save();
+
+            $order->zatca_submitted = true;
+            $order->zatca_submitted_at = now();
+            $order->save();
+        } else {
+            $zatcaDocument = ZatcaDocument::where('order_id', $order->id)->first();
+            if (!$zatcaDocument) {
+                $zatcaDocument = new ZatcaDocument();
+                $zatcaDocument->order_id = $order->id;
+                $zatcaDocument->egs_unit_id = $egsUnit->id;
+                $zatcaDocument->invoice_uuid = $order->uuid;
+                $zatcaDocument->invoice_number = $order->invoice_number;
+                $zatcaDocument->invoice_type = $invoiceType;
+            }
+
+            $zatcaDocument->xml_content = $xml;
+            $zatcaDocument->signed_xml = $signedXml;
+            $zatcaDocument->submission_status = 'failed';
+            $zatcaDocument->error_message = $result['error'] ?? 'Unknown error';
+            $zatcaDocument->retry_count = ($zatcaDocument->retry_count ?? 0) + 1;
+            $zatcaDocument->save();
+        }
+
+        return $result;
+    }
+
+    public function requestComplianceCSID(ZatcaEgsUnit $egsUnit, string $csr, string $otp): array
+    {
+        return $this->apiService->requestCSID($egsUnit, $csr, $otp, 'simulation');
+    }
+
+    public function requestProductionCSID(ZatcaEgsUnit $egsUnit, string $csr, string $otp): array
+    {
+        return $this->apiService->requestCSID($egsUnit, $csr, $otp, 'production');
+    }
+
+    public function generateCompliancePack(ZatcaEgsUnit $egsUnit, string $fromDate, string $toDate, string $environment = 'simulation'): array
+    {
+        return $this->apiService->generateCompliancePack($egsUnit, $fromDate, $toDate, $environment);
+    }
+
+    protected function getInvoiceType(int $orderType): string
+    {
+        $standardTypes = config('zatca.invoice_types.standard', [4, 12]);
+        return in_array($orderType, $standardTypes) ? 'standard' : 'simplified';
     }
 }

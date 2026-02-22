@@ -796,6 +796,7 @@ public function executequotaiton(Request $request, $quotation_id)
 
         $order->journal_entry_id = $je->id;
         $order->save();
+        event(new \App\Events\InvoiceFinalized($order));
 
         // ========= Transactions أساسية =========
         $this->addTransectionWithCostAuto(4, $sellerId, $branchId, $accSalesCode, $accCustomerId, ($order->order_amount - $quotation->total_tax), 'فاتورة مبيعات آجل', $date, $user_id, $order_id, $img, $request->input('cost_id'));

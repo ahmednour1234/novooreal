@@ -348,6 +348,7 @@ public function execute(Request $request)
         $order->zatca_qr_code = \App\Services\ZATCAService::generateZATCAQRCode($zatcaQrData);
         
         $order->save();
+        event(new \App\Events\InvoiceFinalized($order));
 
         OrderDetail::insert($order_details);
         ProductLog::insert($productlogs);

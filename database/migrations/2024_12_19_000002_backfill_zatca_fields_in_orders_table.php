@@ -24,7 +24,7 @@ class BackfillZatcaFieldsInOrdersTable extends Migration
 
         foreach ($companies as $company) {
             $companyId = $company->company_id;
-            
+
             // Get orders for this company ordered by created_at
             $orders = DB::table('orders')
                 ->where(function($query) use ($companyId) {
@@ -45,13 +45,13 @@ class BackfillZatcaFieldsInOrdersTable extends Migration
             foreach ($orders as $order) {
                 // Generate UUID if not exists
                 $uuid = (string) Str::uuid();
-                
+
                 // Generate invoice number
                 $invoiceNumber = ZATCAService::generateInvoiceNumber($counter);
-                
+
                 // Set currency code to SAR if empty
                 $currencyCode = $order->currency_code ?? 'SAR';
-                
+
                 // Update the order
                 DB::table('orders')
                     ->where('id', $order->id)
@@ -75,7 +75,7 @@ class BackfillZatcaFieldsInOrdersTable extends Migration
                     'created_at' => $order->created_at,
                 ];
                 $previousHash = ZATCAService::calculateHash($invoiceData);
-                
+
                 $counter++;
             }
         }
@@ -93,7 +93,7 @@ class BackfillZatcaFieldsInOrdersTable extends Migration
                 ->whereNotNull('invoice_counter')
                 ->max('invoice_counter') ?? 0;
             $counter++;
-            
+
             $previousHash = DB::table('orders')
                 ->whereNotNull('previous_invoice_hash')
                 ->orderBy('created_at', 'desc')
@@ -103,7 +103,7 @@ class BackfillZatcaFieldsInOrdersTable extends Migration
             foreach ($ordersWithoutCompany as $order) {
                 $uuid = (string) Str::uuid();
                 $invoiceNumber = ZATCAService::generateInvoiceNumber($counter);
-                
+
                 DB::table('orders')
                     ->where('id', $order->id)
                     ->update([
@@ -125,7 +125,7 @@ class BackfillZatcaFieldsInOrdersTable extends Migration
                     'created_at' => $order->created_at,
                 ];
                 $previousHash = ZATCAService::calculateHash($invoiceData);
-                
+
                 $counter++;
             }
         }
