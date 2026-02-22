@@ -805,6 +805,13 @@ Route::group(['prefix' => 'pos', 'as' => 'pos.'], function () {
             Route::get('shortcut-keys', 'BusinessSettingsController@shortcut_key')->name('shortcut-keys');
         });
 
+        Route::group(['prefix' => 'zatca-settings', 'as' => 'zatca-settings.'], function () {
+            Route::get('/', 'ZatcaSettingsController@index')->name('index');
+            Route::post('/company', 'ZatcaSettingsController@store')->name('store-company');
+            Route::post('/egs-unit', 'ZatcaSettingsController@storeEgsUnit')->name('store-egs-unit');
+            Route::delete('/egs-unit/{id}', 'ZatcaSettingsController@deleteEgsUnit')->name('delete-egs-unit');
+        });
+
         //coupon
         Route::group(['prefix' => 'coupon', 'as' => 'coupon.'], function () {
             Route::get('add-new', 'CouponController@add_new')->name('add-new');
