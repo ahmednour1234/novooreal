@@ -272,7 +272,7 @@ label:has(input[type="search"][aria-controls="DataTables_Table_5"]) {
 <i class="fa-solid fa-lock nav-icon"></i>                                <span
                                     class="navbar-vertical-aside-mini-mode-hidden-elements text-truncate">{{\App\CPU\translate('الإعدادات الشاملة')}}</span>
                             </a>
-                            <ul class="js-navbar-vertical-aside-submenu nav nav-sub {{Request::is('admin/admin/add')||Request::is('admin/admin/list')|| Request::is('admin/admin/edit*')||Request::is('admin/shift/add')||Request::is('admin/shift/list')|| Request::is('admin/shift/edit*')|| Request::is('admin/branch/add')||Request::is('admin/tax/list')||Request::is('admin/business-settings/shop-setup')||Request::is('admin/roles')?'d-block':''}}">
+                            <ul class="js-navbar-vertical-aside-submenu nav nav-sub {{Request::is('admin/admin/add')||Request::is('admin/admin/list')|| Request::is('admin/admin/edit*')||Request::is('admin/shift/add')||Request::is('admin/shift/list')|| Request::is('admin/shift/edit*')|| Request::is('admin/branch/add')||Request::is('admin/tax/list')||Request::is('admin/business-settings/shop-setup')||Request::is('admin/zatca-settings*')||Request::is('admin/roles')?'d-block':''}}">
                                 <li class="nav-item {{Request::is('admin/admin/add')?'active':''}}">
                                     <a class="nav-link " href="{{route('admin.admin.add')}}"
                                        title="{{\App\CPU\translate('add_new_admin')}}">
@@ -335,6 +335,14 @@ href="{{ route('admin.taxe.list') }}"
                                         <span class="tio-circle nav-indicator-icon"></span>
                                         <span
                                             class="text-truncate i">{{\App\CPU\translate('الاعدادات')}}</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item {{Request::is('admin/zatca-settings*')?'active':''}}">
+                                    <a class="nav-link " href="{{route('admin.zatca-settings.index')}}"
+                                    >
+                                        <span class="tio-circle nav-indicator-icon"></span>
+                                        <span
+                                            class="text-truncate i">{{\App\CPU\translate('إعدادات ZATCA')}}</span>
                                     </a>
                                 </li>
                             </ul>
