@@ -24,11 +24,13 @@ class ZatcaDocument extends Model
         'submitted_at',
         'error_message',
         'retry_count',
+        'response_json',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'retry_count' => 'integer',
+        'response_json' => 'array',
     ];
 
     public function order()

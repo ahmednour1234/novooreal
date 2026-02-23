@@ -19,6 +19,16 @@ class ProcessZatcaInvoice
             return;
         }
 
+        // Only submit in production environment
+        // In simulation, only submit via manual "Run Auto Test" button
+        if ($companySettings->environment !== 'production') {
+            Log::info('ZATCA: Skipping automatic submission in simulation mode', [
+                'order_id' => $order->id,
+                'environment' => $companySettings->environment,
+            ]);
+            return;
+        }
+
         $invoiceTypes = config('zatca.invoice_types', []);
         $standardTypes = $invoiceTypes['standard'] ?? [4, 12];
         $simplifiedTypes = $invoiceTypes['simplified'] ?? [1];

@@ -10,9 +10,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use App\Models\CompanySetting;
 use App\Models\ZatcaEgsUnit;
+use App\Models\Order;
 use App\Models\Branch;
+use App\Jobs\GenerateZatcaCsrJob;
+use App\Jobs\OnboardZatcaEgsUnitJob;
+use App\Jobs\TestZatcaSubmissionJob;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\JsonResponse;
 use Brian2694\Toastr\Facades\Toastr;
 use function App\CPU\translate;
 
@@ -133,5 +139,120 @@ class ZatcaSettingsController extends Controller
         $egsUnit->delete();
         Toastr::success(translate('EGS unit deleted successfully'));
         return redirect()->back();
+    }
+
+    public function generateCsr($id): JsonResponse
+    {
+        try {
+            $egsUnit = ZatcaEgsUnit::findOrFail($id);
+            
+            $job = new GenerateZatcaCsrJob($egsUnit);
+            dispatch($job);
+
+            return response()->json([
+                'success' => true,
+                'message' => translate('CSR generation started'),
+                'job_id' => $job->getJobId(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => translate('Failed to start CSR generation: ') . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function onboard(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'otp' => 'required|string|max:10',
+            'environment' => 'nullable|in:simulation,production',
+        ], [
+            'otp.required' => translate('OTP is required'),
+        ]);
+
+        try {
+            $egsUnit = ZatcaEgsUnit::findOrFail($id);
+            $environment = $request->input('environment', 'simulation');
+
+            if (!$egsUnit->csr_path) {
+                return response()->json([
+                    'success' => false,
+                    'message' => translate('CSR not found. Please generate CSR first.'),
+                ], 400);
+            }
+
+            $job = new OnboardZatcaEgsUnitJob($egsUnit, $request->otp, $environment);
+            dispatch($job);
+
+            return response()->json([
+                'success' => true,
+                'message' => translate('Onboarding started'),
+                'job_id' => $job->getJobId(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => translate('Failed to start onboarding: ') . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function testSubmission(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'environment' => 'nullable|in:simulation,production',
+        ], [
+            'order_id.required' => translate('Order ID is required'),
+            'order_id.exists' => translate('Order not found'),
+        ]);
+
+        try {
+            $egsUnit = ZatcaEgsUnit::findOrFail($id);
+            $order = Order::with('details')->findOrFail($request->order_id);
+            $environment = $request->input('environment', 'simulation');
+
+            if (!$egsUnit->isOnboarded()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => translate('EGS unit is not onboarded. Please onboard first.'),
+                ], 400);
+            }
+
+            $job = new TestZatcaSubmissionJob($order, $egsUnit, $environment);
+            dispatch($job);
+
+            return response()->json([
+                'success' => true,
+                'message' => translate('Test submission started'),
+                'job_id' => $job->getJobId(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => translate('Failed to start test submission: ') . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getJobStatus($jobId): JsonResponse
+    {
+        $status = Cache::get("zatca_job_{$jobId}");
+
+        if (!$status) {
+            return response()->json([
+                'success' => false,
+                'message' => translate('Job status not found'),
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'status' => $status['status'],
+            'message' => $status['message'],
+            'data' => $status['data'] ?? [],
+            'updated_at' => $status['updated_at'] ?? null,
+        ]);
     }
 }

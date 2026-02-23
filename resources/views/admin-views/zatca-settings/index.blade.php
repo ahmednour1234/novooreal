@@ -53,6 +53,30 @@
             color: white;
             font-size: 24px;
         }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .job-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .job-status.processing {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .job-status.completed {
+            background-color: #e8f5e9;
+            color: #388e3c;
+        }
+        .job-status.failed {
+            background-color: #ffebee;
+            color: #d32f2f;
+        }
     </style>
 @endpush
 
@@ -213,6 +237,24 @@
                                                                 </small>
                                                             </div>
                                                         @endif
+                                                        <div class="action-buttons" id="actions-{{ $egsUnit->id }}">
+                                                            <button type="button" class="btn btn-sm btn-primary" 
+                                                                    onclick="generateCsr({{ $egsUnit->id }})"
+                                                                    {{ $egsUnit->csr_path ? 'disabled' : '' }}>
+                                                                <i class="tio-key"></i> {{ \App\CPU\translate('إنشاء CSR') }}
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-success" 
+                                                                    onclick="openOnboardModal({{ $egsUnit->id }})"
+                                                                    {{ !$egsUnit->csr_path ? 'disabled' : '' }}>
+                                                                <i class="tio-checkmark-circle"></i> {{ \App\CPU\translate('تفعيل') }}
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-warning" 
+                                                                    onclick="openTestModal({{ $egsUnit->id }})"
+                                                                    {{ !$egsUnit->isOnboarded() ? 'disabled' : '' }}>
+                                                                <i class="tio-play"></i> {{ \App\CPU\translate('اختبار') }}
+                                                            </button>
+                                                        </div>
+                                                        <div class="job-status" id="job-status-{{ $egsUnit->id }}"></div>
                                                         <div class="d-flex justify-content-end mt-3">
                                                             <button type="button" class="btn btn-sm btn-info me-2" 
                                                                     onclick="editEgsUnit({{ json_encode($egsUnit) }})">
@@ -246,6 +288,84 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Modal -->
+    <div class="modal fade" id="onboardModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ \App\CPU\translate('تفعيل وحدة EGS') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="onboardForm">
+                    @csrf
+                    <input type="hidden" id="onboard_egs_unit_id">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>{{ \App\CPU\translate('OTP من بوابة ZATCA') }} <span class="text-danger">*</span></label>
+                            <input type="text" id="onboard_otp" class="form-control" 
+                                   placeholder="{{ \App\CPU\translate('أدخل OTP') }}" required maxlength="10">
+                            <small class="form-text text-muted">
+                                {{ \App\CPU\translate('احصل على OTP من بوابة Fatoora. لن يتم حفظ OTP.') }}
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>{{ \App\CPU\translate('البيئة') }}</label>
+                            <select id="onboard_environment" class="form-control">
+                                <option value="simulation">{{ \App\CPU\translate('تجريبي (Simulation)') }}</option>
+                                <option value="production">{{ \App\CPU\translate('إنتاجي (Production)') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ \App\CPU\translate('إلغاء') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ \App\CPU\translate('تفعيل') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Submission Modal -->
+    <div class="modal fade" id="testModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ \App\CPU\translate('اختبار إرسال الفاتورة') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <form id="testForm">
+                    @csrf
+                    <input type="hidden" id="test_egs_unit_id">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>{{ \App\CPU\translate('رقم الطلب') }} <span class="text-danger">*</span></label>
+                            <input type="number" id="test_order_id" class="form-control" 
+                                   placeholder="{{ \App\CPU\translate('أدخل رقم الطلب') }}" required>
+                            <small class="form-text text-muted">
+                                {{ \App\CPU\translate('أدخل رقم الطلب المراد اختباره') }}
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label>{{ \App\CPU\translate('البيئة') }}</label>
+                            <select id="test_environment" class="form-control">
+                                <option value="simulation">{{ \App\CPU\translate('تجريبي (Simulation)') }}</option>
+                                <option value="production">{{ \App\CPU\translate('إنتاجي (Production)') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ \App\CPU\translate('إلغاء') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ \App\CPU\translate('اختبار') }}</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -319,5 +439,171 @@
         document.getElementById('egs_unit_id').value = '';
         document.getElementById('egsUnitModalTitle').textContent = '{{ \App\CPU\translate('إضافة وحدة EGS جديدة') }}';
     });
+
+    function generateCsr(egsUnitId) {
+        if (!confirm('{{ \App\CPU\translate('هل تريد إنشاء CSR والمفاتيح لهذه الوحدة؟') }}')) {
+            return;
+        }
+
+        const statusDiv = document.getElementById('job-status-' + egsUnitId);
+        statusDiv.className = 'job-status processing';
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<i class="tio-sync"></i> {{ \App\CPU\translate('جاري إنشاء CSR...') }}';
+
+        fetch('{{ route("admin.zatca-settings.generate-csr", ":id") }}'.replace(':id', egsUnitId), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                pollJobStatus(data.job_id, egsUnitId);
+            } else {
+                statusDiv.className = 'job-status failed';
+                statusDiv.innerHTML = '<i class="tio-error"></i> ' + data.message;
+            }
+        })
+        .catch(error => {
+            statusDiv.className = 'job-status failed';
+            statusDiv.innerHTML = '<i class="tio-error"></i> {{ \App\CPU\translate('حدث خطأ') }}: ' + error.message;
+        });
+    }
+
+    function openOnboardModal(egsUnitId) {
+        document.getElementById('onboard_egs_unit_id').value = egsUnitId;
+        document.getElementById('onboard_otp').value = '';
+        $('#onboardModal').modal('show');
+    }
+
+    function openTestModal(egsUnitId) {
+        document.getElementById('test_egs_unit_id').value = egsUnitId;
+        document.getElementById('test_order_id').value = '';
+        $('#testModal').modal('show');
+    }
+
+    document.getElementById('onboardForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const egsUnitId = document.getElementById('onboard_egs_unit_id').value;
+        const otp = document.getElementById('onboard_otp').value;
+        const environment = document.getElementById('onboard_environment').value;
+
+        const statusDiv = document.getElementById('job-status-' + egsUnitId);
+        statusDiv.className = 'job-status processing';
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<i class="tio-sync"></i> {{ \App\CPU\translate('جاري التفعيل...') }}';
+
+        $('#onboardModal').modal('hide');
+
+        fetch('{{ route("admin.zatca-settings.onboard", ":id") }}'.replace(':id', egsUnitId), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                otp: otp,
+                environment: environment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                pollJobStatus(data.job_id, egsUnitId);
+            } else {
+                statusDiv.className = 'job-status failed';
+                statusDiv.innerHTML = '<i class="tio-error"></i> ' + data.message;
+            }
+        })
+        .catch(error => {
+            statusDiv.className = 'job-status failed';
+            statusDiv.innerHTML = '<i class="tio-error"></i> {{ \App\CPU\translate('حدث خطأ') }}: ' + error.message;
+        });
+    });
+
+    document.getElementById('testForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const egsUnitId = document.getElementById('test_egs_unit_id').value;
+        const orderId = document.getElementById('test_order_id').value;
+        const environment = document.getElementById('test_environment').value;
+
+        const statusDiv = document.getElementById('job-status-' + egsUnitId);
+        statusDiv.className = 'job-status processing';
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<i class="tio-sync"></i> {{ \App\CPU\translate('جاري الاختبار...') }}';
+
+        $('#testModal').modal('hide');
+
+        fetch('{{ route("admin.zatca-settings.test-submission", ":id") }}'.replace(':id', egsUnitId), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                order_id: orderId,
+                environment: environment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                pollJobStatus(data.job_id, egsUnitId);
+            } else {
+                statusDiv.className = 'job-status failed';
+                statusDiv.innerHTML = '<i class="tio-error"></i> ' + data.message;
+            }
+        })
+        .catch(error => {
+            statusDiv.className = 'job-status failed';
+            statusDiv.innerHTML = '<i class="tio-error"></i> {{ \App\CPU\translate('حدث خطأ') }}: ' + error.message;
+        });
+    });
+
+    function pollJobStatus(jobId, egsUnitId) {
+        const statusDiv = document.getElementById('job-status-' + egsUnitId);
+        const maxAttempts = 60; // 5 minutes max
+        let attempts = 0;
+
+        const poll = setInterval(function() {
+            attempts++;
+            
+            fetch('{{ route("admin.zatca-settings.job-status", ":jobId") }}'.replace(':jobId', jobId))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.status === 'completed') {
+                            clearInterval(poll);
+                            statusDiv.className = 'job-status completed';
+                            statusDiv.innerHTML = '<i class="tio-checkmark-circle"></i> ' + data.message;
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        } else if (data.status === 'failed') {
+                            clearInterval(poll);
+                            statusDiv.className = 'job-status failed';
+                            statusDiv.innerHTML = '<i class="tio-error"></i> ' + data.message;
+                        } else {
+                            statusDiv.innerHTML = '<i class="tio-sync"></i> ' + data.message;
+                        }
+                    }
+
+                    if (attempts >= maxAttempts) {
+                        clearInterval(poll);
+                        statusDiv.className = 'job-status failed';
+                        statusDiv.innerHTML = '<i class="tio-error"></i> {{ \App\CPU\translate('انتهت مهلة الانتظار') }}';
+                    }
+                })
+                .catch(error => {
+                    if (attempts >= maxAttempts) {
+                        clearInterval(poll);
+                        statusDiv.className = 'job-status failed';
+                        statusDiv.innerHTML = '<i class="tio-error"></i> {{ \App\CPU\translate('حدث خطأ في الاتصال') }}';
+                    }
+                });
+        }, 5000); // Poll every 5 seconds
+    }
 </script>
 @endpush

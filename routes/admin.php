@@ -810,6 +810,10 @@ Route::group(['prefix' => 'pos', 'as' => 'pos.'], function () {
             Route::post('/company', 'ZatcaSettingsController@store')->name('store-company');
             Route::post('/egs-unit', 'ZatcaSettingsController@storeEgsUnit')->name('store-egs-unit');
             Route::delete('/egs-unit/{id}', 'ZatcaSettingsController@deleteEgsUnit')->name('delete-egs-unit');
+            Route::post('/egs-unit/{id}/generate-csr', 'ZatcaSettingsController@generateCsr')->name('generate-csr');
+            Route::post('/egs-unit/{id}/onboard', 'ZatcaSettingsController@onboard')->name('onboard');
+            Route::post('/egs-unit/{id}/test-submission', 'ZatcaSettingsController@testSubmission')->name('test-submission');
+            Route::get('/job-status/{jobId}', 'ZatcaSettingsController@getJobStatus')->name('job-status');
         });
 
         //coupon
