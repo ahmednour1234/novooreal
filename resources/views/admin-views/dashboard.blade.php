@@ -63,7 +63,7 @@
 
 <div class="content container dashboard-wrap">
     <div class="mb-4">
-        @if(class_exists(\App\Http\Livewire\DashboardStats::class))
+        @if(class_exists(\Livewire\Component::class))
             @livewire('dashboard-stats', ['bestsellers' => $bestsellers, 'perviousSalaries' => $perviousSalaries, 'salaries' => $salaries, 'sellerscredit' => $sellerscredit, 'sellersbalance' => $sellersbalance])
             @include('admin-views.partials._dashboard-balance-stats', ['account' => $account, 'accountw' => $accountw, 'labels' => $labels, 'bestsellers' => $bestsellers, 'perviousSalaries' => $perviousSalaries, 'salaries' => $salaries, 'sellerscredit' => $sellerscredit, 'sellersbalance' => $sellersbalance, 'useLivewireFilter' => true])
         @else
