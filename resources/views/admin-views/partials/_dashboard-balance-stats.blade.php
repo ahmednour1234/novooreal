@@ -1,6 +1,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-.dash-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.dash-filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; align-items: center; }
+.dash-filter-btn { padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 0.875rem; text-decoration: none; border: 1px solid rgba(0,41,107,.15); background: #fff; color: #00296B; transition: all .2s; }
+.dash-filter-btn:hover { background: #00296B; color: #fff; }
+.dash-filter-btn.active { background: linear-gradient(135deg, #00296B, #00509d); color: #fff; border-color: transparent; }
+.dash-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; }
+.dash-kpi-row-2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+@media (max-width: 768px) { .dash-kpi-row, .dash-kpi-row-2 { grid-template-columns: 1fr; } }
 .dash-kpi {
     background: #fff;
     color: #1a1d21;
@@ -61,13 +67,31 @@
 </style>
 
 @php
-$total_income = is_object($account['total_income']) ? $account['total_income']->sum() : array_sum((array)$account['total_income']);
-$total_expense = is_object($account['total_expense']) ? $account['total_expense']->sum() : array_sum((array)$account['total_expense']);
-$total_refund = is_object($account['total_refund']) ? $account['total_refund']->sum() : array_sum((array)$account['total_refund']);
-$total_installment = is_object($account['total_installment']) ? $account['total_installment']->sum() : array_sum((array)$account['total_installment']);
-$net_sales = round($total_income + $total_expense - $total_refund, 2);
-$total_sales = round($total_income + $total_expense, 2);
+if (!empty($totals_filtered)) {
+    $total_sales = $totals_filtered['total_sales'] ?? 0;
+    $total_income = $totals_filtered['total_income'] ?? 0;
+    $total_expense = $totals_filtered['total_expense'] ?? 0;
+    $total_installment = $totals_filtered['total_installment'] ?? 0;
+    $total_refund = $totals_filtered['total_refund'] ?? 0;
+    $net_sales = $totals_filtered['net_sales'] ?? 0;
+} else {
+    $total_income = is_object($account['total_income']) ? $account['total_income']->sum() : array_sum((array)$account['total_income']);
+    $total_expense = is_object($account['total_expense']) ? $account['total_expense']->sum() : array_sum((array)$account['total_expense']);
+    $total_refund = is_object($account['total_refund']) ? $account['total_refund']->sum() : array_sum((array)$account['total_refund']);
+    $total_installment = is_object($account['total_installment']) ? $account['total_installment']->sum() : array_sum((array)$account['total_installment']);
+    $net_sales = round($total_income + $total_expense - $total_refund, 2);
+    $total_sales = round($total_income + $total_expense, 2);
+}
+$period = $period ?? 'all';
+$dashboardUrl = route('admin.dashboard');
 @endphp
+<div class="dash-filter-row">
+    <a href="{{ $dashboardUrl }}" class="dash-filter-btn {{ $period === 'all' ? 'active' : '' }}">الكل</a>
+    <a href="{{ $dashboardUrl }}?period=today" class="dash-filter-btn {{ $period === 'today' ? 'active' : '' }}">اليوم</a>
+    <a href="{{ $dashboardUrl }}?period=week" class="dash-filter-btn {{ $period === 'week' ? 'active' : '' }}">آخر أسبوع</a>
+    <a href="{{ $dashboardUrl }}?period=month" class="dash-filter-btn {{ $period === 'month' ? 'active' : '' }}">آخر شهر</a>
+    <a href="{{ $dashboardUrl }}?period=year" class="dash-filter-btn {{ $period === 'year' ? 'active' : '' }}">آخر سنة</a>
+</div>
 <div class="dash-kpi-row">
     <div class="dash-kpi">
         <span class="dash-kpi-icon"><i class="tio-chart-pie-1"></i></span>
@@ -81,6 +105,8 @@ $total_sales = round($total_income + $total_expense, 2);
         <span class="dash-kpi-icon"><i class="tio-calendar-month"></i></span>
         <div><div class="kpi-label">مبيعات آجلة</div><div class="kpi-value">{{ number_format(round($total_expense, 2)) }}</div></div>
     </div>
+</div>
+<div class="dash-kpi-row-2">
     <div class="dash-kpi">
         <span class="dash-kpi-icon"><i class="tio-receipt"></i></span>
         <div><div class="kpi-label">التحصيلات</div><div class="kpi-value">{{ number_format(round($total_installment, 2)) }}</div></div>

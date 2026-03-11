@@ -45,7 +45,7 @@ class DashboardController extends Controller
         
     ){}
 
-  public function dashboard()
+  public function dashboard(Request $request)
 {
            $adminId = Auth::guard('admin')->id();
     $admin = DB::table('admins')->where('id', $adminId)->first();
@@ -247,7 +247,33 @@ $productmoreselles = $this->product
     $accounts = $this->account->take(5)->get();
 
     $sellers = $this->seller->where('role', 'seller')->get();
-    return view('admin-views.dashboard', compact('account', 'monthly_income', 'monthly_expense', 'accounts', 'products', 'last_month_income', 'last_month_expense', 'month', 'total_day', 'sellers', 'installments', 'orders', 'stocks', 'labels','accountw','bestsellers','salaries','perviousSalaries','sellerscredit','sellersbalance','productmoreselles','productmorerefunds'));
+
+    $period = $request->get('period', 'all');
+    $from = null;
+    $to = Carbon::now()->endOfDay();
+    if ($period === 'today') {
+        $from = Carbon::today();
+    } elseif ($period === 'week') {
+        $from = Carbon::now()->subWeek()->startOfDay();
+    } elseif ($period === 'month') {
+        $from = Carbon::now()->subMonth()->startOfDay();
+    } elseif ($period === 'year') {
+        $from = Carbon::now()->subYear()->startOfDay();
+    }
+    $totals_filtered = null;
+    if ($from) {
+        $baseOrder = $this->order->whereBetween('created_at', [$from, $to]);
+        $totals_filtered = [
+            'total_income' => (clone $baseOrder)->where('cash', 1)->where('type', 4)->sum('order_amount'),
+            'total_expense' => (clone $baseOrder)->where('cash', 2)->where('type', 4)->sum('order_amount'),
+            'total_refund' => (clone $baseOrder)->where('type', 7)->sum('order_amount'),
+            'total_installment' => $this->installment->whereBetween('created_at', [$from, $to])->sum('total_price'),
+        ];
+        $totals_filtered['total_sales'] = $totals_filtered['total_income'] + $totals_filtered['total_expense'];
+        $totals_filtered['net_sales'] = $totals_filtered['total_sales'] - $totals_filtered['total_refund'];
+    }
+
+    return view('admin-views.dashboard', compact('account', 'monthly_income', 'monthly_expense', 'accounts', 'products', 'last_month_income', 'last_month_expense', 'month', 'total_day', 'sellers', 'installments', 'orders', 'stocks', 'labels','accountw','bestsellers','salaries','perviousSalaries','sellerscredit','sellersbalance','productmoreselles','productmorerefunds', 'period', 'totals_filtered'));
 }
 
 

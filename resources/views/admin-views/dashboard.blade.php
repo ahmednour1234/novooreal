@@ -63,7 +63,7 @@
 
 <div class="content container dashboard-wrap">
     <div class="mb-4">
-        @include('admin-views.partials._dashboard-balance-stats', ['account' => $account])
+        @include('admin-views.partials._dashboard-balance-stats', ['account' => $account, 'period' => $period ?? 'all', 'totals_filtered' => $totals_filtered ?? null])
     </div>
 
     <div class="row g-3 mb-4">
