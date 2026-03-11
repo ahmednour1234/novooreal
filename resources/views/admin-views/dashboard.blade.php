@@ -20,6 +20,7 @@
     box-shadow: var(--dash-shadow);
     transition: transform .25s ease, box-shadow .25s ease;
     overflow: hidden;
+    border-right: 4px solid var(--dash-accent);
 }
 .dash-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,41,107,.12); }
 .dash-card-header {
@@ -31,8 +32,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
 }
-.dash-card-header a { color: rgba(255,255,255,.95); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+.dash-card-header .dash-card-title { display: flex; align-items: center; gap: 10px; }
+.dash-card-header .dash-card-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem;
+}
+.dash-card-header a { color: rgba(255,255,255,.95); text-decoration: none; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 4px; }
 .dash-card-header a:hover { color: var(--dash-gold); }
 .dash-card .card-body { padding: 1.25rem; background: var(--dash-card-bg); }
 .dash-table thead th {
@@ -60,8 +70,11 @@
         <div class="col-md-6">
             <div class="card dash-card">
                 <div class="dash-card-header">
-                    <span>{{ \App\CPU\translate('أدلة محاسبية') }}</span>
-                    <a href="{{ route('admin.storage.indextree') }}">{{ \App\CPU\translate('رؤية المزيد') }}</a>
+                    <span class="dash-card-title">
+                        <span class="dash-card-icon"><i class="tio-account-circle"></i></span>
+                        {{ \App\CPU\translate('أدلة محاسبية') }}
+                    </span>
+                    <a href="{{ route('admin.storage.indextree') }}"><i class="tio-arrow-forward"></i> {{ \App\CPU\translate('رؤية المزيد') }}</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -97,8 +110,11 @@
         <div class="col-md-6">
             <div class="card dash-card">
                 <div class="dash-card-header">
-                    <span>{{ \App\CPU\translate('النواقص') }}</span>
-                    <a href="{{ route('admin.stock.stock-limit') }}">{{ \App\CPU\translate('مشاهدة الكل') }}</a>
+                    <span class="dash-card-title">
+                        <span class="dash-card-icon"><i class="tio-archive"></i></span>
+                        {{ \App\CPU\translate('النواقص') }}
+                    </span>
+                    <a href="{{ route('admin.stock.stock-limit') }}"><i class="tio-arrow-forward"></i> {{ \App\CPU\translate('مشاهدة الكل') }}</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -137,8 +153,11 @@
         <div class="col-md-6">
             <div class="card dash-card">
                 <div class="dash-card-header">
-                    <span>{{ \App\CPU\translate('المنتجات الأكثر مبيعاً') }}</span>
-                    <a href="{{ route('admin.product.list') }}">{{ \App\CPU\translate('رؤية المزيد') }}</a>
+                    <span class="dash-card-title">
+                        <span class="dash-card-icon"><i class="tio-trending-up"></i></span>
+                        {{ \App\CPU\translate('المنتجات الأكثر مبيعاً') }}
+                    </span>
+                    <a href="{{ route('admin.product.list') }}"><i class="tio-arrow-forward"></i> {{ \App\CPU\translate('رؤية المزيد') }}</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -176,8 +195,11 @@
         <div class="col-md-6">
             <div class="card dash-card">
                 <div class="dash-card-header">
-                    <span>{{ \App\CPU\translate('المنتجات الأكثر مرتجعاً') }}</span>
-                    <a href="{{ route('admin.stock.stock-limit') }}">{{ \App\CPU\translate('مشاهدة الكل') }}</a>
+                    <span class="dash-card-title">
+                        <span class="dash-card-icon"><i class="tio-undo"></i></span>
+                        {{ \App\CPU\translate('المنتجات الأكثر مرتجعاً') }}
+                    </span>
+                    <a href="{{ route('admin.stock.stock-limit') }}"><i class="tio-arrow-forward"></i> {{ \App\CPU\translate('مشاهدة الكل') }}</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">

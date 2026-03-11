@@ -1,33 +1,60 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-.dash-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.dash-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .dash-kpi {
-    background: linear-gradient(135deg, #00296B 0%, #00509d 100%);
-    color: #fff;
-    border-radius: 14px;
-    padding: 1rem 1.1rem;
-    box-shadow: 0 6px 20px rgba(0,41,107,.2);
+    background: #fff;
+    color: #1a1d21;
+    border-radius: 16px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: 0 4px 20px rgba(0,41,107,.08);
     transition: transform .2s, box-shadow .2s;
+    border: 1px solid rgba(0,41,107,.06);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
 }
-.dash-kpi:nth-child(odd) { background: linear-gradient(135deg, #00509d 0%, #00296B 100%); }
-.dash-kpi:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,41,107,.25); }
-.dash-kpi .kpi-label { font-size: 0.75rem; opacity: .9; margin-bottom: 4px; }
-.dash-kpi .kpi-value { font-size: 1.25rem; font-weight: 700; }
+.dash-kpi:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,41,107,.14); }
+.dash-kpi-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+.dash-kpi:nth-child(1) .dash-kpi-icon { background: linear-gradient(135deg, #00296B, #00509d); color: #fff; }
+.dash-kpi:nth-child(2) .dash-kpi-icon { background: linear-gradient(135deg, #0d9488, #14b8a6); color: #fff; }
+.dash-kpi:nth-child(3) .dash-kpi-icon { background: linear-gradient(135deg, #7c3aed, #8b5cf6); color: #fff; }
+.dash-kpi:nth-child(4) .dash-kpi-icon { background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; }
+.dash-kpi:nth-child(5) .dash-kpi-icon { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
+.dash-kpi:nth-child(6) .dash-kpi-icon { background: linear-gradient(135deg, #ca8a04, #eab308); color: #fff; }
+.dash-kpi .kpi-label { font-size: 0.72rem; color: #6b7280; margin-bottom: 4px; font-weight: 600; }
+.dash-kpi .kpi-value { font-size: 1.2rem; font-weight: 700; color: #00296B; }
 .chart-card {
     border: none;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(0,41,107,.08);
     overflow: hidden;
     transition: box-shadow .25s;
+    border-right: 4px solid #00509d;
 }
 .chart-card:hover { box-shadow: 0 8px 32px rgba(0,41,107,.12); }
-.card-title {
+.chart-card .card-title {
     background: linear-gradient(135deg, #00296B 0%, #00509d 100%);
     color: white;
     padding: 12px 18px;
     font-weight: 700;
     font-size: 1rem;
     margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.chart-card .card-title .card-title-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
 }
 .chart-container { position: relative; height: 100%; min-height: 260px; }
 .img-one-dash { width: 120px; opacity: 0.7; }
@@ -42,19 +69,37 @@ $net_sales = round($total_income + $total_expense - $total_refund, 2);
 $total_sales = round($total_income + $total_expense, 2);
 @endphp
 <div class="dash-kpi-row">
-    <div class="dash-kpi"><div class="kpi-label">إجمالي المبيعات</div><div class="kpi-value">{{ number_format($total_sales) }}</div></div>
-    <div class="dash-kpi"><div class="kpi-label">مبيعات نقدية</div><div class="kpi-value">{{ number_format(round($total_income, 2)) }}</div></div>
-    <div class="dash-kpi"><div class="kpi-label">مبيعات آجلة</div><div class="kpi-value">{{ number_format(round($total_expense, 2)) }}</div></div>
-    <div class="dash-kpi"><div class="kpi-label">التحصيلات</div><div class="kpi-value">{{ number_format(round($total_installment, 2)) }}</div></div>
-    <div class="dash-kpi"><div class="kpi-label">المرتجعات</div><div class="kpi-value">{{ number_format(round($total_refund, 2)) }}</div></div>
-    <div class="dash-kpi"><div class="kpi-label">صافي المبيعات</div><div class="kpi-value">{{ number_format($net_sales) }}</div></div>
+    <div class="dash-kpi">
+        <span class="dash-kpi-icon"><i class="tio-chart-pie-1"></i></span>
+        <div><div class="kpi-label">إجمالي المبيعات</div><div class="kpi-value">{{ number_format($total_sales) }}</div></div>
+    </div>
+    <div class="dash-kpi">
+        <span class="dash-kpi-icon"><i class="tio-money"></i></span>
+        <div><div class="kpi-label">مبيعات نقدية</div><div class="kpi-value">{{ number_format(round($total_income, 2)) }}</div></div>
+    </div>
+    <div class="dash-kpi">
+        <span class="dash-kpi-icon"><i class="tio-calendar-month"></i></span>
+        <div><div class="kpi-label">مبيعات آجلة</div><div class="kpi-value">{{ number_format(round($total_expense, 2)) }}</div></div>
+    </div>
+    <div class="dash-kpi">
+        <span class="dash-kpi-icon"><i class="tio-receipt"></i></span>
+        <div><div class="kpi-label">التحصيلات</div><div class="kpi-value">{{ number_format(round($total_installment, 2)) }}</div></div>
+    </div>
+    <div class="dash-kpi">
+        <span class="dash-kpi-icon"><i class="tio-undo"></i></span>
+        <div><div class="kpi-label">المرتجعات</div><div class="kpi-value">{{ number_format(round($total_refund, 2)) }}</div></div>
+    </div>
+    <div class="dash-kpi">
+        <span class="dash-kpi-icon"><i class="tio-trending-up"></i></span>
+        <div><div class="kpi-label">صافي المبيعات</div><div class="kpi-value">{{ number_format($net_sales) }}</div></div>
+    </div>
 </div>
 
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card chart-card" style="min-height: 350px;">
             <div class="card-body d-flex flex-column justify-content-between">
-                <h6 class="card-title">فرق المرتبات</h6>
+                <h6 class="card-title"><span class="card-title-icon"><i class="tio-dollar"></i></span> فرق المرتبات</h6>
                 <div class="row d-flex align-items-center">
                     <div class="col-md-6">
                         <canvas id="salaryDoughnutChart"></canvas>
@@ -70,7 +115,7 @@ $total_sales = round($total_income + $total_expense, 2);
     <div class="col-md-6">
         <div class="card chart-card text-black" style="min-height: 350px;">
             <div class="card-body d-flex flex-column justify-content-between">
-                <h6 class="card-title">مخطط بياني للمبيعات</h6>
+                <h6 class="card-title"><span class="card-title-icon"><i class="tio-chart-bar-4"></i></span> مخطط بياني للمبيعات</h6>
                 <canvas id="salesBarCharts"></canvas>
             </div>
         </div>
@@ -81,7 +126,7 @@ $total_sales = round($total_income + $total_expense, 2);
     <div class="col-md-6 d-flex align-items-stretch">
         <div class="card chart-card w-100">
             <div class="card-body d-flex flex-column">
-                <h6 class="card-title">إجمالي المبيعات الشهرية</h6>
+                <h6 class="card-title"><span class="card-title-icon"><i class="tio-chart-pie-1"></i></span> إجمالي المبيعات الشهرية</h6>
                 <div class="chart-container">
                     <canvas id="salesBarChart"></canvas>
                 </div>
@@ -92,7 +137,7 @@ $total_sales = round($total_income + $total_expense, 2);
     <div class="col-md-6 d-flex align-items-stretch">
         <div class="card chart-card w-100">
             <div class="card-body d-flex flex-column">
-                <h6 class="card-title">تحصيلات الأقساط الشهرية</h6>
+                <h6 class="card-title"><span class="card-title-icon"><i class="tio-receipt"></i></span> تحصيلات الأقساط الشهرية</h6>
                 <div class="chart-container">
                     <canvas id="installmentPieChart"></canvas>
                 </div>
@@ -105,7 +150,7 @@ $total_sales = round($total_income + $total_expense, 2);
     <div class="col-md-6">
         <div class="card chart-card">
             <div class="card-body">
-                <h6 class="card-title">صافي المبيعات (مبيعات ومرتجعات) لهذا العام</h6>
+                <h6 class="card-title"><span class="card-title-icon"><i class="tio-trending-up"></i></span> صافي المبيعات (مبيعات ومرتجعات) لهذا العام</h6>
                 <canvas id="salesChart" height="185"></canvas>
             </div>
         </div>
@@ -114,8 +159,8 @@ $total_sales = round($total_income + $total_expense, 2);
     <div class="col-md-6">
         <div class="card chart-card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="card-title mb-0">{{ \App\CPU\translate('أفضل المناديب') }}</h6>
-                <a class="btn btn-sm btn-primary" href="{{ route('admin.admin.list') }}">{{ \App\CPU\translate('رؤية المزيد') }}</a>
+                <h6 class="card-title mb-0"><span class="card-title-icon"><i class="tio-star"></i></span> {{ \App\CPU\translate('أفضل المناديب') }}</h6>
+                <a class="btn btn-sm btn-primary" href="{{ route('admin.admin.list') }}"><i class="tio-arrow-forward"></i> {{ \App\CPU\translate('رؤية المزيد') }}</a>
             </div>
             <div class="card-body">
                 <div class="table-responsive datatable-custom">
