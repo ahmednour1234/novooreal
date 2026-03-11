@@ -280,37 +280,88 @@ $productmoreselles = $this->product
     {
         $period = $request->get('period', 'all');
         $to = Carbon::now()->endOfDay();
-        if ($period === 'all') {
-            $total_income = $this->order->where('cash', 1)->where('type', 4)->sum('order_amount');
-            $total_expense = $this->order->where('cash', 2)->where('type', 4)->sum('order_amount');
-            $total_refund = $this->order->where('type', 7)->sum('order_amount');
-            $total_installment = $this->installment->sum('total_price');
-        } else {
-            if ($period === 'today') {
-                $from = Carbon::today();
-            } elseif ($period === 'week') {
-                $from = Carbon::now()->subWeek()->startOfDay();
-            } elseif ($period === 'month') {
-                $from = Carbon::now()->subMonth()->startOfDay();
-            } else {
-                $from = Carbon::now()->subYear()->startOfDay();
-            }
-            $baseOrder = $this->order->whereBetween('created_at', [$from, $to]);
-            $total_income = (clone $baseOrder)->where('cash', 1)->where('type', 4)->sum('order_amount');
-            $total_expense = (clone $baseOrder)->where('cash', 2)->where('type', 4)->sum('order_amount');
-            $total_refund = (clone $baseOrder)->where('type', 7)->sum('order_amount');
-            $total_installment = $this->installment->whereBetween('created_at', [$from, $to])->sum('total_price');
+        $from = null;
+        if ($period === 'today') {
+            $from = Carbon::today();
+        } elseif ($period === 'week') {
+            $from = Carbon::now()->subWeek()->startOfDay();
+        } elseif ($period === 'month') {
+            $from = Carbon::now()->subMonth()->startOfDay();
+        } elseif ($period === 'year') {
+            $from = Carbon::now()->subYear()->startOfDay();
         }
+        $baseOrder = $from ? $this->order->whereBetween('created_at', [$from, $to]) : $this->order;
+        $total_income = (clone $baseOrder)->where('cash', 1)->where('type', 4)->sum('order_amount');
+        $total_expense = (clone $baseOrder)->where('cash', 2)->where('type', 4)->sum('order_amount');
+        $total_refund = (clone $baseOrder)->where('type', 7)->sum('order_amount');
+        $total_installment = $from ? $this->installment->whereBetween('created_at', [$from, $to])->sum('total_price') : $this->installment->sum('total_price');
         $total_sales = $total_income + $total_expense;
         $net_sales = $total_sales - $total_refund;
-        return response()->json([
+        $totals = [
             'total_sales' => round($total_sales, 2),
             'total_income' => round($total_income, 2),
             'total_expense' => round($total_expense, 2),
             'total_installment' => round($total_installment, 2),
             'total_refund' => round($total_refund, 2),
             'net_sales' => round($net_sales, 2),
-        ]);
+        ];
+        $currentYear = date('Y');
+        $labels = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+        $chartIncome = array_fill(0, 12, 0);
+        $chartExpense = array_fill(0, 12, 0);
+        $chartShabaka = array_fill(0, 12, 0);
+        $chartRefund = array_fill(0, 12, 0);
+        $chartInstallment = array_fill(0, 12, 0);
+        if ($period === 'all' || $period === 'year' || !$from) {
+            $year = $period === 'year' && $from ? $from->format('Y') : $currentYear;
+            for ($m = 1; $m <= 12; $m++) {
+                $start = Carbon::createFromDate($year, $m, 1)->startOfDay();
+                $end = Carbon::createFromDate($year, $m, 1)->endOfMonth();
+                if ($end->gt($to)) $end = $to;
+                if ($start->gt($to)) continue;
+                $o = $this->order->whereBetween('created_at', [$start, $end]);
+                $chartIncome[$m - 1] = (clone $o)->where('cash', 1)->where('type', 4)->sum('order_amount');
+                $chartExpense[$m - 1] = (clone $o)->where('cash', 2)->where('type', 4)->sum('order_amount');
+                $chartShabaka[$m - 1] = (clone $o)->where('cash', 3)->where('type', 4)->sum('order_amount');
+                $chartRefund[$m - 1] = (clone $o)->where('type', 7)->sum('order_amount');
+                $chartInstallment[$m - 1] = $this->installment->whereBetween('created_at', [$start, $end])->sum('total_price');
+            }
+        } elseif ($period === 'month' || $period === 'week') {
+            $days = $period === 'week' ? 7 : 30;
+            $labels = [];
+            $chartIncome = []; $chartExpense = []; $chartShabaka = []; $chartRefund = []; $chartInstallment = [];
+            for ($i = $days - 1; $i >= 0; $i--) {
+                $day = Carbon::now()->subDays($i);
+                $labels[] = $day->format('d/m');
+                $start = $day->copy()->startOfDay();
+                $end = $day->copy()->endOfDay();
+                $o = $this->order->whereBetween('created_at', [$start, $end]);
+                $chartIncome[] = (clone $o)->where('cash', 1)->where('type', 4)->sum('order_amount');
+                $chartExpense[] = (clone $o)->where('cash', 2)->where('type', 4)->sum('order_amount');
+                $chartShabaka[] = (clone $o)->where('cash', 3)->where('type', 4)->sum('order_amount');
+                $chartRefund[] = (clone $o)->where('type', 7)->sum('order_amount');
+                $chartInstallment[] = $this->installment->whereBetween('created_at', [$start, $end])->sum('total_price');
+            }
+        } else {
+            $labels = [Carbon::now()->format('d/m')];
+            $o = $this->order->whereDate('created_at', Carbon::today());
+            $chartIncome = [(clone $o)->where('cash', 1)->where('type', 4)->sum('order_amount')];
+            $chartExpense = [(clone $o)->where('cash', 2)->where('type', 4)->sum('order_amount')];
+            $chartShabaka = [(clone $o)->where('cash', 3)->where('type', 4)->sum('order_amount')];
+            $chartRefund = [(clone $o)->where('type', 7)->sum('order_amount')];
+            $chartInstallment = [$this->installment->whereDate('created_at', Carbon::today())->sum('total_price')];
+        }
+        $charts = [
+            'labels' => $labels,
+            'income' => array_values($chartIncome),
+            'expense' => array_values($chartExpense),
+            'shabaka' => array_values($chartShabaka),
+            'refund' => array_values($chartRefund),
+            'installment' => array_values($chartInstallment),
+            'cards_labels' => ['إجمالي المبيعات', 'مبيعات نقدية', 'مبيعات آجلة', 'التحصيلات', 'المرتجعات', 'صافي المبيعات'],
+            'cards_values' => [$totals['total_sales'], $totals['total_income'], $totals['total_expense'], $totals['total_installment'], $totals['total_refund'], $totals['net_sales']],
+        ];
+        return response()->json(array_merge($totals, ['charts' => $charts]));
     }
 
     /**

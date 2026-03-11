@@ -26,6 +26,9 @@
     <link rel="stylesheet" href="{{asset('public/assets/admin')}}/css/custom.css"/>
 
     <link rel="stylesheet" href="{{asset('public/assets/admin')}}/css/toastr.css">
+    @if(class_exists(\Livewire\Livewire::class))
+    @livewireStyles
+    @endif
 </head>
 <style>
     #sidebarMain{
@@ -619,6 +622,8 @@ h1{
 <audio id="myAudio">
     <source src="{{asset('public/assets/admin/sound/notification.mp3')}}" type="audio/mpeg">
 </audio>
-
+@if(class_exists(\Livewire\Livewire::class))
+@livewireScripts
+@endif
 </body>
 </html>

@@ -93,7 +93,9 @@ if (!empty($totals_filtered)) {
 }
 $period = $period ?? 'all';
 $statsUrl = route('admin.dashboard.stats');
+$useLivewireFilter = $useLivewireFilter ?? false;
 @endphp
+@if(empty($useLivewireFilter))
 <div class="dash-stats-wrap" id="dashStatsLive">
     <div class="dash-filter-row">
         <button type="button" class="dash-filter-btn {{ $period === 'all' ? 'active' : '' }}" data-period="all">الكل</button>
@@ -131,6 +133,7 @@ $statsUrl = route('admin.dashboard.stats');
         </div>
     </div>
 </div>
+@endif
 <script>
 (function(){
     var wrap = document.getElementById('dashStatsLive');
@@ -148,7 +151,9 @@ $statsUrl = route('admin.dashboard.stats');
             var key = el.getAttribute('data-key');
             if (data[key] != null) el.textContent = formatNum(data[key]);
         });
+        if (data.charts && window.updateDashboardCharts) window.updateDashboardCharts(data.charts);
     }
+    document.addEventListener('dashboardChartsUpdate', function(e){ if (e.detail && window.updateDashboardCharts) window.updateDashboardCharts(e.detail); });
     btns.forEach(function(btn){
         btn.addEventListener('click', function(){
             var period = this.getAttribute('data-period');
@@ -279,11 +284,12 @@ $statsUrl = route('admin.dashboard.stats');
 <!-- Include Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 @php
-// Ensure you are summing the collections before using them in calculations
-$total_income = $account['total_income']->sum(); // Sum the collection of total_income
-$total_expense = $account['total_expense']->sum(); // Sum the collection of total_expense
-$total_refund = $account['total_refund']->sum(); // Sum the collection of total_refund
-$total_installment = $account['total_installment']->sum(); // Sum the collection of total_installment
+$accountw = $accountw ?? [];
+$account = $account ?? [];
+$total_income = is_object($account['total_income'] ?? null) ? ($account['total_income']->sum()) : (array_sum((array)($account['total_income'] ?? [])));
+$total_expense = is_object($account['total_expense'] ?? null) ? ($account['total_expense']->sum()) : (array_sum((array)($account['total_expense'] ?? [])));
+$total_refund = is_object($account['total_refund'] ?? null) ? ($account['total_refund']->sum()) : (array_sum((array)($account['total_refund'] ?? [])));
+$total_installment = is_object($account['total_installment'] ?? null) ? ($account['total_installment']->sum()) : (array_sum((array)($account['total_installment'] ?? [])));
 
 $cards = [
     ['title' => 'إجمالي المبيعات', 'value' => round($total_income + $total_expense, 2)],
@@ -295,9 +301,6 @@ $cards = [
 ];
 @endphp
 <script>
-    // Debugging: Check if data exists
-    console.log("Account Data:", {!! json_encode($accountw) !!});
-
     // Extract Data from Laravel (JSON encode to pass as JavaScript variables)
     var total_expense = {!! json_encode($accountw['total_expense'] ?? []) !!};
     var total_income = {!! json_encode($accountw['total_income'] ?? []) !!};
@@ -319,152 +322,86 @@ $cards = [
         '#efad0a', '#3c4b96', '#efad0a', '#3c4b96', '#efad0a', '#3c4b96'
     ];
 
-    var ctxBarq = document.getElementById('salesBarChart').getContext('2d');
-    var ctxPieq = document.getElementById('installmentPieChart').getContext('2d');
-
-    // Bar Chart: Sales Data by Month
-    new Chart(ctxBarq, {
-        type: 'bar',
-        data: {
-            labels: months,
-            datasets: [
-                {
-                    label: 'إجمالي مبيعات أجل',
-                    data: expenseData,
-                    backgroundColor: '#efad0a',
-                    borderColor: '#efad0a',
-                    borderWidth: 1
-                },
-                {
-                    label: 'إجمالي مبيعات نقدي',
-                    data: incomeData,
-                    backgroundColor: '#3c4b96',
-                    borderColor: '#3c4b96',
-                    borderWidth: 1
-                },
-                {
-                    label: 'إجمالي الشبكة',
-                    data: shabakaData,
-                    backgroundColor: '#efad0a',
-                    borderColor: '#efad0a',
-                    borderWidth: 1
-                }
-            ]
-        },
-options: {
-    responsive: true,
-    scales: {
-        y: {
-   grid: {
-                        display: false  // This hides the grid lines on the y-axis
-                    },
-                    ticks: {
-                beginAtZero: true
-            }
-        },
-      x: {
-                grid: {
-                    display: false  // Hide the grid on the x-axis
-                }
-            }   
-    },
-     
-    plugins: {
-        legend: {
-            position: 'top'
-        }
-    }
-}
-    });
-
-    // Pie Chart: Installment Collections by Month
-new Chart(ctxPieq, {
-    type: 'line',
-    data: {
-        labels: months,
-        datasets: [{
-            data: installmentData,
-            backgroundColor: 'rgba(173, 216, 230, 0.2)',  // Light blue color with transparency
-            borderColor: '#efad0a',  // Light blue color for the line
-            borderWidth: 2,  // Make the line width a bit thicker
-            fill: true  // Fill the area under the line
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-        
-        },
-        scales: {
-            x: {
-                grid: {
-                    display: false  // Hide the grid on the x-axis
-                }
+    window.dashboardCharts = window.dashboardCharts || {};
+    var ctxBarq = document.getElementById('salesBarChart');
+    var ctxPieq = document.getElementById('installmentPieChart');
+    if (ctxBarq) {
+        window.dashboardCharts.salesBarChart = new Chart(ctxBarq.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [
+                    { label: 'إجمالي مبيعات أجل', data: expenseData, backgroundColor: '#efad0a', borderColor: '#efad0a', borderWidth: 1 },
+                    { label: 'إجمالي مبيعات نقدي', data: incomeData, backgroundColor: '#3c4b96', borderColor: '#3c4b96', borderWidth: 1 },
+                    { label: 'إجمالي الشبكة', data: shabakaData, backgroundColor: '#efad0a', borderColor: '#efad0a', borderWidth: 1 }
+                ]
             },
-            y: {
-                beginAtZero: true,  // Start the Y-axis from zero
-                grid: {
-                    display: false  // Hide the grid on the y-axis
-                }
-            }
-        }
+            options: { responsive: true, scales: { y: { grid: { display: false }, ticks: { beginAtZero: true } }, x: { grid: { display: false } } }, plugins: { legend: { position: 'top' } } }
+        });
     }
-});
+    if (ctxPieq) {
+        window.dashboardCharts.installmentPieChart = new Chart(ctxPieq.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{ data: installmentData, backgroundColor: 'rgba(173, 216, 230, 0.2)', borderColor: '#efad0a', borderWidth: 2, fill: true }]
+            },
+            options: { responsive: true, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { display: false } } } }
+        });
+    }
 </script>
 
 
 <script>
-// Get data from PHP
-const labels = @json(array_column($cards, 'title'));
-const values = @json(array_column($cards, 'value'));
-
-// Get the canvas context first
-const ctx5 = document.getElementById('salesBarCharts').getContext('2d');
-
-// درجات اللون الأزرق
-const blueColors = ['#3c4b96', '#3c4b96', '#99ccff']; // كحلي، أزرق، لبني
-
-// تحديد الألوان بشكل ديناميكي
-const backgroundColors = values.map((_, index) => blueColors[index % blueColors.length]);
-
-const salesBarChart = new Chart(ctx5, {
-    type: 'bar',
-    data: {
-        labels: labels, // Labels from PHP array
-        datasets: [{
-            label: 'المبيعات',
-            data: values, // Values from PHP array
-            backgroundColor: backgroundColors, // الألوان
-            borderColor: backgroundColors, // نفس اللون للحدود
-            borderWidth: 1,
-            barThickness: 15 // تحديد سمك الأعمدة (عرض الأعمدة)
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            x: {
-                grid: {
-                    display: false // إخفاء شبكة المحور X
-                }
-            },
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1000 // تعديل الخطوات إذا لزم الأمر
-                },
-                grid: {
-                    display: false // إخفاء شبكة المحور Y
-                }
-            }
+(function(){
+    var labels = @json(array_column($cards, 'title'));
+    var values = @json(array_column($cards, 'value'));
+    var blueColors = ['#3c4b96', '#3c4b96', '#99ccff'];
+    var backgroundColors = values.map(function(_, i){ return blueColors[i % blueColors.length]; });
+    var ctx5 = document.getElementById('salesBarCharts');
+    if (!ctx5) return;
+    window.dashboardCharts = window.dashboardCharts || {};
+    window.dashboardCharts.salesBarCharts = new Chart(ctx5.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{ label: 'المبيعات', data: values, backgroundColor: backgroundColors, borderColor: backgroundColors, borderWidth: 1, barThickness: 15 }]
         },
-        plugins: {
-            legend: {
-                display: false // إخفاء الأسطورة
-            }
+        options: {
+            responsive: true,
+            scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { display: false } } },
+            plugins: { legend: { display: false } }
         }
-    }
-});
+    });
+    window.updateDashboardCharts = function(charts) {
+        if (!charts || !window.dashboardCharts) return;
+        if (charts.cards_labels && charts.cards_values && window.dashboardCharts.salesBarCharts) {
+            window.dashboardCharts.salesBarCharts.data.labels = charts.cards_labels;
+            window.dashboardCharts.salesBarCharts.data.datasets[0].data = charts.cards_values;
+            window.dashboardCharts.salesBarCharts.data.datasets[0].backgroundColor = charts.cards_values.map(function(_, i){ return ['#3c4b96','#3c4b96','#99ccff'][i % 3]; });
+            window.dashboardCharts.salesBarCharts.data.datasets[0].borderColor = window.dashboardCharts.salesBarCharts.data.datasets[0].backgroundColor;
+            window.dashboardCharts.salesBarCharts.update('active');
+        }
+        if (charts.labels && window.dashboardCharts.salesBarChart) {
+            window.dashboardCharts.salesBarChart.data.labels = charts.labels;
+            window.dashboardCharts.salesBarChart.data.datasets[0].data = charts.expense || [];
+            window.dashboardCharts.salesBarChart.data.datasets[1].data = charts.income || [];
+            window.dashboardCharts.salesBarChart.data.datasets[2].data = charts.shabaka || [];
+            window.dashboardCharts.salesBarChart.update('active');
+        }
+        if (charts.labels && window.dashboardCharts.installmentPieChart) {
+            window.dashboardCharts.installmentPieChart.data.labels = charts.labels;
+            window.dashboardCharts.installmentPieChart.data.datasets[0].data = charts.installment || [];
+            window.dashboardCharts.installmentPieChart.update('active');
+        }
+        if (charts.labels && window.dashboardCharts.salesChart) {
+            window.dashboardCharts.salesChart.data.labels = charts.labels;
+            window.dashboardCharts.salesChart.data.datasets[0].data = charts.income || [];
+            window.dashboardCharts.salesChart.data.datasets[1].data = charts.refund || [];
+            window.dashboardCharts.salesChart.update('active');
+        }
+    };
+})();
 </script>
 <script>
 const previousSalaries = {{ $perviousSalaries }};
@@ -547,76 +484,23 @@ const creditBalanceDoughnutChart = new Chart(ctx2, {
     gradientRefund.addColorStop(0.9, 'rgba(255, 171, 0, 0.16)'); // Lighter yellow with reduced opacity
     gradientRefund.addColorStop(1, 'rgba(255, 255, 255, 0.5)'); // White with reduced opacity
 
-    var salesChart = new Chart(ctx, {
+    window.dashboardCharts = window.dashboardCharts || {};
+    window.dashboardCharts.salesChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: months,
-            datasets: [{
-                label: 'المبيعات',  // Sales label first
-                data: Object.values(totalIncomeData),  // Convert data to an array
-                borderColor: '#3c4b96',  // Green color
-                backgroundColor: gradientIncome,  // Apply gradient for sales data
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,  // This creates the curve effect
-                // Remove point style related properties
-            }, {
-                label: 'المرتجعات',  // Refund label second
-                data: Object.values(totalRefundData),  // Convert data to an array
-                borderColor: '#efad0a',  // Yellow color
-                backgroundColor: gradientRefund,  // Apply gradient for refund data
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,  // This creates the curve effect
-                // Remove point style related properties
-            }]
+            datasets: [
+                { label: 'المبيعات', data: Object.values(totalIncomeData), borderColor: '#3c4b96', backgroundColor: gradientIncome, borderWidth: 2, fill: true, tension: 0.4 },
+                { label: 'المرتجعات', data: Object.values(totalRefundData), borderColor: '#efad0a', backgroundColor: gradientRefund, borderWidth: 2, fill: true, tension: 0.4 }
+            ]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    position: 'top',  // Position the legend at the top
-                    align: 'end',  // Align legend to the right (end)
-                    labels: {
-                        usePointStyle: true,  // Make the label a circular point
-                        padding: 20,  // Add space between the point and the label
-                        boxWidth: 12,  // Adjust size of the legend circle
-                        font: {
-                            size: 12,  // Adjust font size
-                        },
-                        // Align legend items horizontally
-                        boxHeight: 10,
-                        boxWidth: 10,
-                        padding: 10
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(tooltipItem) {
-                            return tooltipItem.dataset.label + ': ' + tooltipItem.raw + ' ' + '{{ \App\CPU\Helpers::currency_symbol() }}';
-                        }
-                    }
-                }
+                legend: { position: 'top', align: 'end', labels: { usePointStyle: true, padding: 20, boxWidth: 12, boxHeight: 10, font: { size: 12 } } },
+                tooltip: { callbacks: { label: function(tooltipItem) { return tooltipItem.dataset.label + ': ' + tooltipItem.raw + ' {{ \App\CPU\Helpers::currency_symbol() }}'; } } }
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        display: false  // This hides the grid lines on the y-axis
-                    },
-                    ticks: {
-                        display: true  // Show the y-axis values
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false  // This hides the grid lines on the x-axis
-                    },
-                    ticks: {
-                        display: true  // Show the x-axis values
-                    }
-                }
-            }
+            scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { display: true } }, x: { grid: { display: false }, ticks: { display: true } } }
         }
     });
 </script>

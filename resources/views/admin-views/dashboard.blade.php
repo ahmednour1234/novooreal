@@ -63,7 +63,12 @@
 
 <div class="content container dashboard-wrap">
     <div class="mb-4">
-        @include('admin-views.partials._dashboard-balance-stats', ['account' => $account, 'period' => $period ?? 'all', 'totals_filtered' => $totals_filtered ?? null])
+        @if(class_exists(\App\Http\Livewire\DashboardStats::class))
+            @livewire('dashboard-stats', ['bestsellers' => $bestsellers, 'perviousSalaries' => $perviousSalaries, 'salaries' => $salaries, 'sellerscredit' => $sellerscredit, 'sellersbalance' => $sellersbalance])
+            @include('admin-views.partials._dashboard-balance-stats', ['account' => $account, 'accountw' => $accountw, 'labels' => $labels, 'bestsellers' => $bestsellers, 'perviousSalaries' => $perviousSalaries, 'salaries' => $salaries, 'sellerscredit' => $sellerscredit, 'sellersbalance' => $sellersbalance, 'useLivewireFilter' => true])
+        @else
+            @include('admin-views.partials._dashboard-balance-stats', ['account' => $account, 'period' => $period ?? 'all', 'totals_filtered' => $totals_filtered ?? null, 'accountw' => $accountw ?? null, 'labels' => $labels ?? [], 'bestsellers' => $bestsellers ?? [], 'perviousSalaries' => $perviousSalaries ?? 0, 'salaries' => $salaries ?? 0, 'sellerscredit' => $sellerscredit ?? 0, 'sellersbalance' => $sellersbalance ?? 0])
+        @endif
     </div>
 
     <div class="row g-3 mb-4">
