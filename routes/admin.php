@@ -274,6 +274,7 @@ Route::post('admin/purchase_invoice/execute', [PurchaseInvoiceController::class,
     Route::post('admin/purchase_invoice/processConfirmedReturn', [PurchaseInvoiceController::class, 'processConfirmedReturn'])
     ->name('purchase_invoice.processConfirmedReturn');
         Route::get('/dashboard', 'DashboardController@dashboard')->name('dashboard');
+        Route::get('/dashboard/stats', 'DashboardController@dashboardStats')->name('dashboard.stats');
         Route::post('account-status','DashboardController@account_stats')->name('account-status');
         Route::get('settings', 'SystemController@settings')->name('settings');
         Route::post('settings', 'SystemController@settings_update');

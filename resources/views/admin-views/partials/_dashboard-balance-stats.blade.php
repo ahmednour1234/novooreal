@@ -1,66 +1,75 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-.dash-filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; align-items: center; }
-.dash-filter-btn { padding: 8px 16px; border-radius: 10px; font-weight: 600; font-size: 0.875rem; text-decoration: none; border: 1px solid rgba(0,41,107,.15); background: #fff; color: #00296B; transition: all .2s; }
-.dash-filter-btn:hover { background: #00296B; color: #fff; }
-.dash-filter-btn.active { background: linear-gradient(135deg, #00296B, #00509d); color: #fff; border-color: transparent; }
-.dash-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; }
-.dash-kpi-row-2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.dash-stats-wrap { --dash-primary: #00296B; --dash-accent: #00509d; --dash-gold: #F8C01C; }
+.dash-filter-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1.25rem; align-items: center; padding: 12px 16px; background: linear-gradient(145deg, rgba(255,255,255,.95) 0%, rgba(248,250,252,1) 100%); border-radius: 20px; box-shadow: 0 4px 24px rgba(0,41,107,.06), inset 0 1px 0 rgba(255,255,255,.8); border: 1px solid rgba(0,41,107,.06); }
+.dash-filter-btn { padding: 10px 20px; border-radius: 14px; font-weight: 700; font-size: 0.9rem; text-decoration: none; border: 2px solid transparent; background: #fff; color: #475569; transition: all .3s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.dash-filter-btn:hover { background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent)); color: #fff; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,41,107,.25); }
+.dash-filter-btn.active { background: linear-gradient(135deg, var(--dash-primary), var(--dash-accent)); color: #fff; border-color: rgba(255,255,255,.3); box-shadow: 0 6px 20px rgba(0,41,107,.3); }
+.dash-filter-btn.loading { pointer-events: none; opacity: .8; }
+.dash-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+.dash-kpi-row-2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 1.5rem; }
 @media (max-width: 768px) { .dash-kpi-row, .dash-kpi-row-2 { grid-template-columns: 1fr; } }
 .dash-kpi {
-    background: #fff;
+    background: linear-gradient(160deg, #ffffff 0%, #f8fafc 100%);
     color: #1a1d21;
-    border-radius: 16px;
-    padding: 1.1rem 1.2rem;
-    box-shadow: 0 4px 20px rgba(0,41,107,.08);
-    transition: transform .2s, box-shadow .2s;
+    border-radius: 20px;
+    padding: 1.35rem 1.4rem;
+    box-shadow: 0 8px 32px rgba(0,41,107,.06), 0 2px 8px rgba(0,0,0,.02), inset 0 1px 0 rgba(255,255,255,.9);
+    transition: transform .35s cubic-bezier(0.4,0,0.2,1), box-shadow .35s;
     border: 1px solid rgba(0,41,107,.06);
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
 }
-.dash-kpi:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,41,107,.14); }
+.dash-kpi::before { content: ''; position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: radial-gradient(circle, rgba(0,41,107,.04) 0%, transparent 70%); border-radius: 50%; pointer-events: none; }
+.dash-kpi:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 20px 40px rgba(0,41,107,.12), 0 8px 16px rgba(0,0,0,.04); }
 .dash-kpi-icon {
-    width: 44px; height: 44px;
-    border-radius: 12px;
+    width: 52px; height: 52px;
+    border-radius: 16px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.35rem;
+    font-size: 1.5rem;
     flex-shrink: 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,.12);
+    transition: transform .3s;
 }
-.dash-kpi:nth-child(1) .dash-kpi-icon { background: linear-gradient(135deg, #00296B, #00509d); color: #fff; }
-.dash-kpi:nth-child(2) .dash-kpi-icon { background: linear-gradient(135deg, #0d9488, #14b8a6); color: #fff; }
-.dash-kpi:nth-child(3) .dash-kpi-icon { background: linear-gradient(135deg, #7c3aed, #8b5cf6); color: #fff; }
-.dash-kpi:nth-child(4) .dash-kpi-icon { background: linear-gradient(135deg, #ea580c, #f97316); color: #fff; }
-.dash-kpi:nth-child(5) .dash-kpi-icon { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
-.dash-kpi:nth-child(6) .dash-kpi-icon { background: linear-gradient(135deg, #ca8a04, #eab308); color: #fff; }
-.dash-kpi .kpi-label { font-size: 0.72rem; color: #6b7280; margin-bottom: 4px; font-weight: 600; }
-.dash-kpi .kpi-value { font-size: 1.2rem; font-weight: 700; color: #00296B; }
+.dash-kpi:hover .dash-kpi-icon { transform: scale(1.08); }
+.dash-kpi:nth-child(1) .dash-kpi-icon { background: linear-gradient(145deg, #00296B, #00509d); color: #fff; }
+.dash-kpi:nth-child(2) .dash-kpi-icon { background: linear-gradient(145deg, #0d9488, #14b8a6); color: #fff; }
+.dash-kpi:nth-child(3) .dash-kpi-icon { background: linear-gradient(145deg, #7c3aed, #8b5cf6); color: #fff; }
+.dash-kpi-row-2 .dash-kpi:nth-child(1) .dash-kpi-icon { background: linear-gradient(145deg, #ea580c, #f97316); color: #fff; }
+.dash-kpi-row-2 .dash-kpi:nth-child(2) .dash-kpi-icon { background: linear-gradient(145deg, #dc2626, #ef4444); color: #fff; }
+.dash-kpi-row-2 .dash-kpi:nth-child(3) .dash-kpi-icon { background: linear-gradient(145deg, #ca8a04, #eab308); color: #fff; }
+.dash-kpi .kpi-label { font-size: 0.75rem; color: #64748b; margin-bottom: 6px; font-weight: 700; letter-spacing: .02em; }
+.dash-kpi .kpi-value { font-size: 1.35rem; font-weight: 800; color: var(--dash-primary); letter-spacing: -.02em; transition: opacity .25s; }
+.dash-kpi .kpi-value.loading { opacity: .5; }
 .chart-card {
     border: none;
-    border-radius: 16px;
-    box-shadow: 0 4px 24px rgba(0,41,107,.08);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,41,107,.06), 0 2px 8px rgba(0,0,0,.02);
     overflow: hidden;
-    transition: box-shadow .25s;
-    border-right: 4px solid #00509d;
+    transition: transform .3s, box-shadow .3s;
+    border-right: 4px solid var(--dash-accent, #00509d);
 }
-.chart-card:hover { box-shadow: 0 8px 32px rgba(0,41,107,.12); }
+.chart-card:hover { box-shadow: 0 16px 40px rgba(0,41,107,.1); transform: translateY(-2px); }
 .chart-card .card-title {
     background: linear-gradient(135deg, #00296B 0%, #00509d 100%);
     color: white;
-    padding: 12px 18px;
+    padding: 14px 20px;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.05rem;
     margin-bottom: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 .chart-card .card-title .card-title-icon {
-    width: 36px; height: 36px;
-    border-radius: 10px;
+    width: 40px; height: 40px;
+    border-radius: 12px;
     background: rgba(255,255,255,.25);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
 }
 .chart-container { position: relative; height: 100%; min-height: 260px; }
 .img-one-dash { width: 120px; opacity: 0.7; }
@@ -83,43 +92,78 @@ if (!empty($totals_filtered)) {
     $total_sales = round($total_income + $total_expense, 2);
 }
 $period = $period ?? 'all';
-$dashboardUrl = route('admin.dashboard');
+$statsUrl = route('admin.dashboard.stats');
 @endphp
-<div class="dash-filter-row">
-    <a href="{{ $dashboardUrl }}" class="dash-filter-btn {{ $period === 'all' ? 'active' : '' }}">الكل</a>
-    <a href="{{ $dashboardUrl }}?period=today" class="dash-filter-btn {{ $period === 'today' ? 'active' : '' }}">اليوم</a>
-    <a href="{{ $dashboardUrl }}?period=week" class="dash-filter-btn {{ $period === 'week' ? 'active' : '' }}">آخر أسبوع</a>
-    <a href="{{ $dashboardUrl }}?period=month" class="dash-filter-btn {{ $period === 'month' ? 'active' : '' }}">آخر شهر</a>
-    <a href="{{ $dashboardUrl }}?period=year" class="dash-filter-btn {{ $period === 'year' ? 'active' : '' }}">آخر سنة</a>
+<div class="dash-stats-wrap" id="dashStatsLive">
+    <div class="dash-filter-row">
+        <button type="button" class="dash-filter-btn {{ $period === 'all' ? 'active' : '' }}" data-period="all">الكل</button>
+        <button type="button" class="dash-filter-btn {{ $period === 'today' ? 'active' : '' }}" data-period="today">اليوم</button>
+        <button type="button" class="dash-filter-btn {{ $period === 'week' ? 'active' : '' }}" data-period="week">آخر أسبوع</button>
+        <button type="button" class="dash-filter-btn {{ $period === 'month' ? 'active' : '' }}" data-period="month">آخر شهر</button>
+        <button type="button" class="dash-filter-btn {{ $period === 'year' ? 'active' : '' }}" data-period="year">آخر سنة</button>
+    </div>
+    <div class="dash-kpi-row">
+        <div class="dash-kpi">
+            <span class="dash-kpi-icon"><i class="tio-chart-pie-1"></i></span>
+            <div><div class="kpi-label">إجمالي المبيعات</div><div class="kpi-value" data-key="total_sales">{{ number_format($total_sales) }}</div></div>
+        </div>
+        <div class="dash-kpi">
+            <span class="dash-kpi-icon"><i class="tio-money"></i></span>
+            <div><div class="kpi-label">مبيعات نقدية</div><div class="kpi-value" data-key="total_income">{{ number_format(round($total_income, 2)) }}</div></div>
+        </div>
+        <div class="dash-kpi">
+            <span class="dash-kpi-icon"><i class="tio-calendar-month"></i></span>
+            <div><div class="kpi-label">مبيعات آجلة</div><div class="kpi-value" data-key="total_expense">{{ number_format(round($total_expense, 2)) }}</div></div>
+        </div>
+    </div>
+    <div class="dash-kpi-row-2">
+        <div class="dash-kpi">
+            <span class="dash-kpi-icon"><i class="tio-receipt"></i></span>
+            <div><div class="kpi-label">التحصيلات</div><div class="kpi-value" data-key="total_installment">{{ number_format(round($total_installment, 2)) }}</div></div>
+        </div>
+        <div class="dash-kpi">
+            <span class="dash-kpi-icon"><i class="tio-undo"></i></span>
+            <div><div class="kpi-label">المرتجعات</div><div class="kpi-value" data-key="total_refund">{{ number_format(round($total_refund, 2)) }}</div></div>
+        </div>
+        <div class="dash-kpi">
+            <span class="dash-kpi-icon"><i class="tio-trending-up"></i></span>
+            <div><div class="kpi-label">صافي المبيعات</div><div class="kpi-value" data-key="net_sales">{{ number_format($net_sales) }}</div></div>
+        </div>
+    </div>
 </div>
-<div class="dash-kpi-row">
-    <div class="dash-kpi">
-        <span class="dash-kpi-icon"><i class="tio-chart-pie-1"></i></span>
-        <div><div class="kpi-label">إجمالي المبيعات</div><div class="kpi-value">{{ number_format($total_sales) }}</div></div>
-    </div>
-    <div class="dash-kpi">
-        <span class="dash-kpi-icon"><i class="tio-money"></i></span>
-        <div><div class="kpi-label">مبيعات نقدية</div><div class="kpi-value">{{ number_format(round($total_income, 2)) }}</div></div>
-    </div>
-    <div class="dash-kpi">
-        <span class="dash-kpi-icon"><i class="tio-calendar-month"></i></span>
-        <div><div class="kpi-label">مبيعات آجلة</div><div class="kpi-value">{{ number_format(round($total_expense, 2)) }}</div></div>
-    </div>
-</div>
-<div class="dash-kpi-row-2">
-    <div class="dash-kpi">
-        <span class="dash-kpi-icon"><i class="tio-receipt"></i></span>
-        <div><div class="kpi-label">التحصيلات</div><div class="kpi-value">{{ number_format(round($total_installment, 2)) }}</div></div>
-    </div>
-    <div class="dash-kpi">
-        <span class="dash-kpi-icon"><i class="tio-undo"></i></span>
-        <div><div class="kpi-label">المرتجعات</div><div class="kpi-value">{{ number_format(round($total_refund, 2)) }}</div></div>
-    </div>
-    <div class="dash-kpi">
-        <span class="dash-kpi-icon"><i class="tio-trending-up"></i></span>
-        <div><div class="kpi-label">صافي المبيعات</div><div class="kpi-value">{{ number_format($net_sales) }}</div></div>
-    </div>
-</div>
+<script>
+(function(){
+    var wrap = document.getElementById('dashStatsLive');
+    if (!wrap) return;
+    var statsUrl = @json($statsUrl);
+    var btns = wrap.querySelectorAll('.dash-filter-btn');
+    var values = wrap.querySelectorAll('.kpi-value[data-key]');
+    function formatNum(n) { return Number(n).toLocaleString('ar-EG', { maximumFractionDigits: 2, minimumFractionDigits: 0 }); }
+    function setLoading(loading) {
+        values.forEach(function(el){ el.classList.toggle('loading', loading); });
+        btns.forEach(function(b){ b.classList.toggle('loading', loading); });
+    }
+    function applyData(data) {
+        values.forEach(function(el){
+            var key = el.getAttribute('data-key');
+            if (data[key] != null) el.textContent = formatNum(data[key]);
+        });
+    }
+    btns.forEach(function(btn){
+        btn.addEventListener('click', function(){
+            var period = this.getAttribute('data-period');
+            btns.forEach(function(b){ b.classList.remove('active'); });
+            this.classList.add('active');
+            setLoading(true);
+            fetch(statsUrl + '?period=' + encodeURIComponent(period), { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+                .then(function(r){ return r.json(); })
+                .then(function(data){ applyData(data); })
+                .catch(function(){ })
+                .finally(function(){ setLoading(false); });
+        });
+    });
+})();
+</script>
 
 <div class="row mb-4">
     <div class="col-md-6">
