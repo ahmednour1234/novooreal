@@ -1,30 +1,58 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-    .card-title {
-        background-color: #3c4b96;
-        color: white;
-        padding: 10px 15px;
-        border-radius: 5px;
-        font-size: 16px;
-        margin-bottom: 20px;
-    }
-
-    .chart-container {
-        position: relative;
-        height: 100%;
-    }
-
-    .img-one-dash {
-        width: 120px;
-        opacity: 0.7;
-    }
+.dash-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.dash-kpi {
+    background: linear-gradient(135deg, #00296B 0%, #00509d 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    box-shadow: 0 6px 20px rgba(0,41,107,.2);
+    transition: transform .2s, box-shadow .2s;
+}
+.dash-kpi:nth-child(odd) { background: linear-gradient(135deg, #00509d 0%, #00296B 100%); }
+.dash-kpi:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,41,107,.25); }
+.dash-kpi .kpi-label { font-size: 0.75rem; opacity: .9; margin-bottom: 4px; }
+.dash-kpi .kpi-value { font-size: 1.25rem; font-weight: 700; }
+.chart-card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,41,107,.08);
+    overflow: hidden;
+    transition: box-shadow .25s;
+}
+.chart-card:hover { box-shadow: 0 8px 32px rgba(0,41,107,.12); }
+.card-title {
+    background: linear-gradient(135deg, #00296B 0%, #00509d 100%);
+    color: white;
+    padding: 12px 18px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+.chart-container { position: relative; height: 100%; min-height: 260px; }
+.img-one-dash { width: 120px; opacity: 0.7; }
 </style>
 
+@php
+$total_income = is_object($account['total_income']) ? $account['total_income']->sum() : array_sum((array)$account['total_income']);
+$total_expense = is_object($account['total_expense']) ? $account['total_expense']->sum() : array_sum((array)$account['total_expense']);
+$total_refund = is_object($account['total_refund']) ? $account['total_refund']->sum() : array_sum((array)$account['total_refund']);
+$total_installment = is_object($account['total_installment']) ? $account['total_installment']->sum() : array_sum((array)$account['total_installment']);
+$net_sales = round($total_income + $total_expense - $total_refund, 2);
+$total_sales = round($total_income + $total_expense, 2);
+@endphp
+<div class="dash-kpi-row">
+    <div class="dash-kpi"><div class="kpi-label">إجمالي المبيعات</div><div class="kpi-value">{{ number_format($total_sales) }}</div></div>
+    <div class="dash-kpi"><div class="kpi-label">مبيعات نقدية</div><div class="kpi-value">{{ number_format(round($total_income, 2)) }}</div></div>
+    <div class="dash-kpi"><div class="kpi-label">مبيعات آجلة</div><div class="kpi-value">{{ number_format(round($total_expense, 2)) }}</div></div>
+    <div class="dash-kpi"><div class="kpi-label">التحصيلات</div><div class="kpi-value">{{ number_format(round($total_installment, 2)) }}</div></div>
+    <div class="dash-kpi"><div class="kpi-label">المرتجعات</div><div class="kpi-value">{{ number_format(round($total_refund, 2)) }}</div></div>
+    <div class="dash-kpi"><div class="kpi-label">صافي المبيعات</div><div class="kpi-value">{{ number_format($net_sales) }}</div></div>
+</div>
+
 <div class="row mb-4">
-    <!-- Salary & Credit Charts -->
     <div class="col-md-6">
-        <div class="card shadow bg-white" style="min-height: 350px;">
+        <div class="card chart-card" style="min-height: 350px;">
             <div class="card-body d-flex flex-column justify-content-between">
                 <h6 class="card-title">فرق المرتبات</h6>
                 <div class="row d-flex align-items-center">
@@ -39,9 +67,8 @@
         </div>
     </div>
 
-    <!-- Sales Bar Chart -->
     <div class="col-md-6">
-        <div class="card shadow bg-white text-black" style="min-height: 350px;">
+        <div class="card chart-card text-black" style="min-height: 350px;">
             <div class="card-body d-flex flex-column justify-content-between">
                 <h6 class="card-title">مخطط بياني للمبيعات</h6>
                 <canvas id="salesBarCharts"></canvas>
@@ -51,9 +78,8 @@
 </div>
 
 <div class="row mb-4">
-    <!-- Monthly Sales Bar Chart -->
     <div class="col-md-6 d-flex align-items-stretch">
-        <div class="card shadow bg-white w-100">
+        <div class="card chart-card w-100">
             <div class="card-body d-flex flex-column">
                 <h6 class="card-title">إجمالي المبيعات الشهرية</h6>
                 <div class="chart-container">
@@ -63,9 +89,8 @@
         </div>
     </div>
 
-    <!-- Installment Pie Chart -->
     <div class="col-md-6 d-flex align-items-stretch">
-        <div class="card shadow bg-white w-100">
+        <div class="card chart-card w-100">
             <div class="card-body d-flex flex-column">
                 <h6 class="card-title">تحصيلات الأقساط الشهرية</h6>
                 <div class="chart-container">
@@ -76,11 +101,9 @@
     </div>
 </div>
 
-<!-- Net Sales + Best Sellers -->
 <div class="row mb-4">
-    <!-- Net Sales Chart -->
     <div class="col-md-6">
-        <div class="card shadow bg-white">
+        <div class="card chart-card">
             <div class="card-body">
                 <h6 class="card-title">صافي المبيعات (مبيعات ومرتجعات) لهذا العام</h6>
                 <canvas id="salesChart" height="185"></canvas>
@@ -88,9 +111,8 @@
         </div>
     </div>
 
-    <!-- Best Sellers Table -->
     <div class="col-md-6">
-        <div class="card shadow bg-white">
+        <div class="card chart-card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="card-title mb-0">{{ \App\CPU\translate('أفضل المناديب') }}</h6>
                 <a class="btn btn-sm btn-primary" href="{{ route('admin.admin.list') }}">{{ \App\CPU\translate('رؤية المزيد') }}</a>

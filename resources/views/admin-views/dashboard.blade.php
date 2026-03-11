@@ -3,101 +3,70 @@
 @section('title', \App\CPU\translate('dashboard'))
 
 @section('content')
-
 <style>
-    .card-title-header {
-        background: linear-gradient(90deg, #3c4b96 0%, #3c4b96 100%);
-        color: #fff;
-        padding: 10px 15px;
-        border-radius: 0.5rem 0.5rem 0 0;
-        font-weight: bold;
-        font-size: 1.2rem;
-        margin-bottom: 0;
-    }
-
-    .img-one-dash {
-        width: 100px;
-        opacity: 0.6;
-    }
-
-    .trip-card {
-        position: relative;
-        overflow: hidden;
-        border: none;
-        border-radius: .75rem;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-    }
-
-    .trip-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .trip-card .card-header {
-        background: linear-gradient(90deg, #3c4b96 0%, #3c4b96 100%);
-        color: #fff;
-        border-top-left-radius: .75rem;
-        border-top-right-radius: .75rem;
-        font-weight: bold;
-    }
-
-    .trip-card .card-body {
-        background-color: #fff;
-    }
-
-    .stat-box {
-        background: #f9f9f9;
-        border-radius: .5rem;
-        padding: 10px;
-        transition: background-color 0.3s ease;
-    }
-
-    .stat-box:hover {
-        background-color: #ffeede;
-    }
-
-    .stat-box strong {
-        display: block;
-        font-size: 1.4rem;
-        color: #333;
-    }
-
-    @keyframes drive {
-        0% {
-            right: -100px;
-        }
-
-        100% {
-            right: calc(100% + 100px);
-        }
-    }
-
-    .animated-car {
-        position: absolute;
-        bottom: 280px;
-        width: 60px;
-        opacity: 0.8;
-        animation: drive 6s linear infinite;
-    }
+:root {
+    --dash-primary: #00296B;
+    --dash-accent: #00509d;
+    --dash-gold: #F8C01C;
+    --dash-card-bg: #fff;
+    --dash-shadow: 0 4px 24px rgba(0,41,107,.08);
+    --dash-radius: 16px;
+    --dash-radius-sm: 10px;
+}
+.dashboard-wrap { background: linear-gradient(180deg, #f0f4fc 0%, #fff 120px); min-height: 100vh; padding-bottom: 2rem; }
+.dash-card {
+    border: none;
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow);
+    transition: transform .25s ease, box-shadow .25s ease;
+    overflow: hidden;
+}
+.dash-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,41,107,.12); }
+.dash-card-header {
+    background: linear-gradient(135deg, var(--dash-primary) 0%, var(--dash-accent) 100%);
+    color: #fff;
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.dash-card-header a { color: rgba(255,255,255,.95); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+.dash-card-header a:hover { color: var(--dash-gold); }
+.dash-card .card-body { padding: 1.25rem; background: var(--dash-card-bg); }
+.dash-table thead th {
+    color: #5c6370;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    border-bottom: 2px solid #eef1f6;
+    padding: 12px 10px;
+}
+.dash-table tbody tr { transition: background .2s; }
+.dash-table tbody tr:hover { background: #f8fafc; }
+.dash-table tbody td { padding: 12px 10px; vertical-align: middle; }
+.img-one-dash { width: 80px; opacity: 0.5; }
+.section-title { font-size: 1.25rem; font-weight: 700; color: var(--dash-primary); margin-bottom: 1.25rem; }
 </style>
 
-<div class="content container">
-    <div class="mb-3">
+<div class="content container dashboard-wrap">
+    <div class="mb-4">
         @include('admin-views.partials._dashboard-balance-stats', ['account' => $account])
     </div>
 
-    {{-- أدلة محاسبية ونواقص --}}
-    <div class="row gx-2 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-title-header d-flex justify-content-between align-items-center">
+            <div class="card dash-card">
+                <div class="dash-card-header">
                     <span>{{ \App\CPU\translate('أدلة محاسبية') }}</span>
-                    <a href="{{ route('admin.storage.indextree') }}" class="text-white">{{ \App\CPU\translate('رؤية المزيد') }}</a>
+                    <a href="{{ route('admin.storage.indextree') }}">{{ \App\CPU\translate('رؤية المزيد') }}</a>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive datatable-custom">
-                        <table class="table table-borderless table-thead-bordered table-nowrap table-align-middle card-table">
-                            <thead class="thead-light">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-nowrap table-align-middle dash-table">
+                            <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>اسم الحساب</th>
@@ -105,17 +74,17 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($accounts as $key => $account)
+                                @forelse ($accounts as $key => $acc)
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
-                                        <td><a class="text-primary" href="#">{{ $account->account }}</a></td>
-                                        <td>{{ $account->balance . ' ' . \App\CPU\Helpers::currency_symbol() }}</td>
+                                        <td><a class="text-primary" href="#">{{ $acc->account }}</a></td>
+                                        <td>{{ $acc->balance . ' ' . \App\CPU\Helpers::currency_symbol() }}</td>
                                     </tr>
                                 @empty
                                     <tr>
                                         <td colspan="3" class="text-center p-4">
                                             <img src="{{ asset('public/assets/admin/svg/illustrations/sorry.svg') }}" class="img-one-dash">
-                                            <p>لاتوجد بيانات للعرض</p>
+                                            <p class="mb-0 text-muted">لاتوجد بيانات للعرض</p>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -125,18 +94,16 @@
                 </div>
             </div>
         </div>
-
-        {{-- النواقص --}}
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-title-header d-flex justify-content-between align-items-center">
+            <div class="card dash-card">
+                <div class="dash-card-header">
                     <span>{{ \App\CPU\translate('النواقص') }}</span>
-                    <a href="{{ route('admin.stock.stock-limit') }}" class="text-white">{{ \App\CPU\translate('مشاهدة الكل') }}</a>
+                    <a href="{{ route('admin.stock.stock-limit') }}">{{ \App\CPU\translate('مشاهدة الكل') }}</a>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive datatable-custom">
-                        <table class="table table-borderless table-thead-bordered table-nowrap table-align-middle card-table">
-                            <thead class="thead-light">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-nowrap table-align-middle dash-table">
+                            <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>الاسم</th>
@@ -154,7 +121,7 @@
                                     <tr>
                                         <td colspan="3" class="text-center p-4">
                                             <img src="{{ asset('public/assets/admin/svg/illustrations/sorry.svg') }}" class="img-one-dash">
-                                            <p>لاتوجد بيانات للعرض</p>
+                                            <p class="mb-0 text-muted">لاتوجد بيانات للعرض</p>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -166,18 +133,17 @@
         </div>
     </div>
 
-    {{-- المنتجات الأكثر مبيعًا ومرتجعًا --}}
-    <div class="row gx-2 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-title-header d-flex justify-content-between align-items-center">
+            <div class="card dash-card">
+                <div class="dash-card-header">
                     <span>{{ \App\CPU\translate('المنتجات الأكثر مبيعاً') }}</span>
-                    <a href="{{ route('admin.product.list') }}" class="text-white">{{ \App\CPU\translate('رؤية المزيد') }}</a>
+                    <a href="{{ route('admin.product.list') }}">{{ \App\CPU\translate('رؤية المزيد') }}</a>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive datatable-custom">
-                        <table class="table table-borderless table-thead-bordered table-nowrap table-align-middle card-table">
-                            <thead class="thead-light">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-nowrap table-align-middle dash-table">
+                            <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>اسم المنتج</th>
@@ -197,7 +163,7 @@
                                     <tr>
                                         <td colspan="4" class="text-center p-4">
                                             <img src="{{ asset('public/assets/admin/svg/illustrations/sorry.svg') }}" class="img-one-dash">
-                                            <p>لاتوجد بيانات للعرض</p>
+                                            <p class="mb-0 text-muted">لاتوجد بيانات للعرض</p>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -207,18 +173,16 @@
                 </div>
             </div>
         </div>
-
-        {{-- الأكثر مرتجعاً --}}
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-title-header d-flex justify-content-between align-items-center">
+            <div class="card dash-card">
+                <div class="dash-card-header">
                     <span>{{ \App\CPU\translate('المنتجات الأكثر مرتجعاً') }}</span>
-                    <a href="{{ route('admin.stock.stock-limit') }}" class="text-white">{{ \App\CPU\translate('مشاهدة الكل') }}</a>
+                    <a href="{{ route('admin.stock.stock-limit') }}">{{ \App\CPU\translate('مشاهدة الكل') }}</a>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive datatable-custom">
-                        <table class="table table-borderless table-thead-bordered table-nowrap table-align-middle card-table">
-                            <thead class="thead-light">
+                    <div class="table-responsive">
+                        <table class="table table-borderless table-nowrap table-align-middle dash-table">
+                            <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>اسم المنتج</th>
@@ -238,7 +202,7 @@
                                     <tr>
                                         <td colspan="4" class="text-center p-4">
                                             <img src="{{ asset('public/assets/admin/svg/illustrations/sorry.svg') }}" class="img-one-dash">
-                                            <p>لاتوجد بيانات للعرض</p>
+                                            <p class="mb-0 text-muted">لاتوجد بيانات للعرض</p>
                                         </td>
                                     </tr>
                                 @endforelse
